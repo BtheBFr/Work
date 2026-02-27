@@ -1,17 +1,15 @@
 // ============================================
 // WORK от "B the B" | Завод Осколки
-// Apps Script версия (ОПТИМИЗИРОВАННАЯ)
+// ПОЛНАЯ ВЕРСИЯ С ЗАГРУЗКОЙ ФОТО
 // ============================================
 
-// Конфигурация
-const API_URL = 'https://script.google.com/macros/s/AKfycbz02h0AraZ90QM6VjxixRZbLvAA-4ZFK1CdqU2BU1zRJJZKhkTfUx_za4PNeNM-02k/exec';
+const API_URL = CONFIG.apiUrl;
 let currentUser = null;
 let currentWordleGame = null;
 let selectedShop = null;
 let selectedFile = null;
 let selectedMethod = null;
 let isLoading = false;
-let pendingRequests = new Map();
 
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
@@ -24,21 +22,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
-    // Кнопки авторизации
     document.getElementById('showLoginBtn')?.addEventListener('click', showLoginForm);
     document.getElementById('showRegisterBtn')?.addEventListener('click', showRegisterForm);
     
-    // Кнопки пользователя
     document.getElementById('btnProfile')?.addEventListener('click', () => showProfile());
     document.getElementById('btnHistory')?.addEventListener('click', () => showHistory());
     document.getElementById('btnWithdraw')?.addEventListener('click', () => showWithdraw());
     document.getElementById('btnAdmin')?.addEventListener('click', () => showAdminPanel());
     document.getElementById('btnLogout')?.addEventListener('click', logout);
     
-    // Мобильное меню
     document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleMobileMenu);
     
-    // Модальное окно
     document.getElementById('modalClose')?.addEventListener('click', hideModal);
     document.getElementById('modalOverlay')?.addEventListener('click', (e) => {
         if (e.target === document.getElementById('modalOverlay')) {
@@ -47,7 +41,6 @@ function initApp() {
     });
 }
 
-// Эффект свечения за курсором
 function initCursorGlow() {
     const glow = document.querySelector('.cursor-glow');
     if (!glow) return;
@@ -71,20 +64,13 @@ function initCursorGlow() {
 }
 
 // ============================================
-// РАБОТА С API (с кэшированием)
+// РАБОТА С API
 // ============================================
 
-async function callAppsScript(action, params = {}, useCache = false) {
-    // Проверяем загрузку
+async function callAppsScript(action, params = {}) {
     if (isLoading) {
         showNotification('Подождите, выполняется запрос...', 'warning');
         return null;
-    }
-    
-    // Проверяем кэш
-    const cacheKey = `${action}_${JSON.stringify(params)}`;
-    if (useCache && pendingRequests.has(cacheKey)) {
-        return pendingRequests.get(cacheKey);
     }
     
     isLoading = true;
@@ -106,12 +92,6 @@ async function callAppsScript(action, params = {}, useCache = false) {
         if (!data.success) {
             showNotification(data.error || 'Ошибка запроса', 'error');
             return null;
-        }
-        
-        // Сохраняем в кэш
-        if (useCache) {
-            pendingRequests.set(cacheKey, data);
-            setTimeout(() => pendingRequests.delete(cacheKey), 5000);
         }
         
         return data;
@@ -168,7 +148,6 @@ function showLoginForm() {
     `;
     showModal(form);
     
-    // Фокус на поле ввода
     setTimeout(() => {
         document.getElementById('loginToken')?.focus();
     }, 100);
@@ -247,7 +226,6 @@ async function loginWithToken(token) {
 }
 
 async function checkIfAdmin(token) {
-    // Проверка админа через таблицу
     const result = await callAppsScript('checkAdmin', { token });
     if (result && result.success && result.isAdmin) {
         document.getElementById('btnAdmin').style.display = 'flex';
@@ -267,7 +245,6 @@ function logout() {
     document.getElementById('welcomeScreen').style.display = 'flex';
     document.getElementById('userPanel').style.display = 'none';
     document.getElementById('btnAdmin').style.display = 'none';
-    showMainMenu();
     showNotification('Вы вышли из аккаунта', 'info');
 }
 
@@ -311,15 +288,12 @@ async function loadWordle() {
     
     const words = result.words;
     
-    // Ищем слово для пользователя
     let userWord = words.find(w => w.assignedTo === currentUser.token);
     
     if (!userWord) {
-        // Ищем свободное слово
         const freeWord = words.find(w => !w.assignedTo && w.status === 'свободно');
         
         if (freeWord) {
-            // Назначаем слово
             const saveResult = await callAppsScript('saveWordProgress', {
                 token: currentUser.token,
                 word: freeWord.word,
@@ -581,10 +555,13 @@ async function saveWordleProgress() {
 }
 
 // ============================================
-// ЧЕК
+// ЧЕК С ЗАГРУЗКОЙ ФОТО НА GOOGLE DRIVE
 // ============================================
 
 function loadCheck() {
+    selectedShop = null;
+    selectedFile = null;
+    
     const html = `
         <div class="check-container glass">
             <h2 class="form-title">🧾 Загрузить чек</h2>
@@ -687,6 +664,20 @@ function updateUploadButton() {
     }
 }
 
+// Конвертация файла в base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
+// Загрузка чека с фото на Google Drive
 async function uploadCheck() {
     if (!selectedShop || !selectedFile) {
         showNotification('Выберите магазин и файл', 'error');
@@ -695,16 +686,28 @@ async function uploadCheck() {
     
     showNotification('Загрузка...', 'info');
     
-    const result = await callAppsScript('addCheck', {
-        token: currentUser.token,
-        nickname: currentUser.nickname,
-        shop: selectedShop,
-        photoUrl: 'pending'
-    });
-    
-    if (result && result.success) {
-        showNotification('Чек отправлен на проверку!', 'success');
-        showMainMenu();
+    try {
+        const base64Photo = await fileToBase64(selectedFile);
+        
+        const fileName = `check_${currentUser.token}_${Date.now()}.jpg`;
+        const mimeType = selectedFile.type;
+        
+        const result = await callAppsScript('uploadPhoto', {
+            base64Data: base64Photo,
+            fileName: fileName,
+            mimeType: mimeType,
+            token: currentUser.token,
+            nickname: currentUser.nickname,
+            shop: selectedShop
+        });
+        
+        if (result && result.success) {
+            showNotification('Чек отправлен на проверку!', 'success');
+            showMainMenu();
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки:', error);
+        showNotification('Ошибка при загрузке фото', 'error');
     }
 }
 
@@ -880,7 +883,6 @@ async function showWithdraw() {
         currentUser = userResult.user;
     }
     
-    // Доступные методы
     const availableMethods = [];
     if (currentUser.card) availableMethods.push({ id: 'card', name: 'Карта', icon: '💳', details: currentUser.card });
     if (currentUser.phone) availableMethods.push({ id: 'phone', name: 'Телефон', icon: '📱', details: currentUser.phone });
