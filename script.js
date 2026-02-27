@@ -1,6 +1,6 @@
 // ============================================
 // WORK от "B the B" | Завод Осколки
-// ПОЛНАЯ ВЕРСИЯ С ЗАГРУЗКОЙ ФОТО
+// С КЭШИРОВАНИЕМ И БЫСТРОЙ ЗАГРУЗКОЙ
 // ============================================
 
 const API_URL = CONFIG.apiUrl;
@@ -9,7 +9,14 @@ let currentWordleGame = null;
 let selectedShop = null;
 let selectedFile = null;
 let selectedMethod = null;
-let isLoading = false;
+
+// КЭШ для данных
+const cache = {
+    user: null,
+    words: {},
+    history: null,
+    timestamp: {}
+};
 
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
@@ -17,7 +24,6 @@ let isLoading = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
-    initCursorGlow();
     checkSavedSession();
 });
 
@@ -41,40 +47,18 @@ function initApp() {
     });
 }
 
-function initCursorGlow() {
-    const glow = document.querySelector('.cursor-glow');
-    if (!glow) return;
-    
-    let mouseX = 0, mouseY = 0;
-    let glowX = 0, glowY = 0;
-    
-    document.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX - 200;
-        mouseY = e.clientY - 200;
-    });
-    
-    function animate() {
-        glowX += (mouseX - glowX) * 0.1;
-        glowY += (mouseY - glowY) * 0.1;
-        glow.style.transform = `translate(${glowX}px, ${glowY}px)`;
-        requestAnimationFrame(animate);
-    }
-    
-    animate();
-}
-
 // ============================================
-// РАБОТА С API
+// РАБОТА С API (С КЭШИРОВАНИЕМ)
 // ============================================
 
-async function callAppsScript(action, params = {}) {
-    if (isLoading) {
-        showNotification('Подождите, выполняется запрос...', 'warning');
-        return null;
-    }
+async function callAppsScript(action, params = {}, useCache = false, cacheTime = 60000) {
+    const cacheKey = `${action}_${JSON.stringify(params)}`;
     
-    isLoading = true;
-    showLoading(true);
+    // Проверяем кэш
+    if (useCache && cache[cacheKey] && (Date.now() - cache.timestamp[cacheKey] < cacheTime)) {
+        console.log(`📦 КЭШ: ${action}`, cache[cacheKey]);
+        return cache[cacheKey];
+    }
     
     try {
         const urlParams = new URLSearchParams({
@@ -90,25 +74,19 @@ async function callAppsScript(action, params = {}) {
         console.log(`📦 API ответ: ${action}`, data);
         
         if (!data.success) {
-            showNotification(data.error || 'Ошибка запроса', 'error');
             return null;
+        }
+        
+        // Сохраняем в кэш
+        if (useCache) {
+            cache[cacheKey] = data;
+            cache.timestamp[cacheKey] = Date.now();
         }
         
         return data;
     } catch (error) {
         console.error('❌ API ошибка:', error);
-        showNotification('Ошибка соединения с сервером', 'error');
         return null;
-    } finally {
-        isLoading = false;
-        showLoading(false);
-    }
-}
-
-function showLoading(show) {
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        loadingScreen.style.display = show ? 'flex' : 'none';
     }
 }
 
@@ -119,7 +97,14 @@ function showLoading(show) {
 function checkSavedSession() {
     const savedToken = localStorage.getItem('userToken');
     if (savedToken) {
-        loginWithToken(savedToken);
+        // Сразу показываем интерфейс, не ждем сервер
+        showMainMenu();
+        document.getElementById('welcomeScreen').style.display = 'none';
+        document.getElementById('userPanel').style.display = 'flex';
+        document.querySelector('.token-value').textContent = savedToken;
+        
+        // Асинхронно загружаем данные
+        loginWithToken(savedToken, true);
     }
 }
 
@@ -207,21 +192,31 @@ async function registerUser() {
     
     if (result && result.success) {
         showNotification('Регистрация успешна!', 'success');
-        hideModal();
+        hideModal(); // ЗАКРЫВАЕМ МОДАЛКУ
         loginWithToken(token);
     }
 }
 
-async function loginWithToken(token) {
+async function loginWithToken(token, silent = false) {
     const result = await callAppsScript('login', { token });
     
     if (result && result.success) {
         currentUser = result.user;
         localStorage.setItem('userToken', token);
-        hideModal();
-        showUserInterface();
+        
+        if (!silent) {
+            hideModal(); // ЗАКРЫВАЕМ МОДАЛКУ
+            showUserInterface();
+            showNotification(`Добро пожаловать, ${currentUser.nickname}!`, 'success');
+        } else {
+            // Обновляем данные в фоне
+            currentUser = result.user;
+            document.querySelector('.token-value').textContent = currentUser.token;
+        }
+        
         checkIfAdmin(token);
-        showNotification(`Добро пожаловать, ${currentUser.nickname}!`, 'success');
+    } else if (!silent) {
+        showNotification('Ошибка входа', 'error');
     }
 }
 
@@ -275,20 +270,21 @@ function showMainMenu() {
 // ============================================
 
 async function loadWordle() {
-    showLoading(true);
-    
     const today = new Date().toLocaleDateString('ru-RU');
     
-    const result = await callAppsScript('getWords', { date: today });
+    // Сразу показываем пустую сетку
+    showEmptyWordle();
+    
+    // Загружаем данные
+    const result = await callAppsScript('getWords', { date: today }, true, 60000); // КЭШ 1 минуту
     
     if (!result || !result.success) {
-        showLoading(false);
         return;
     }
     
     const words = result.words;
     
-    let userWord = words.find(w => w.assignedTo === currentUser.token);
+    let userWord = words.find(w => w.assignedTo === currentUser?.token);
     
     if (!userWord) {
         const freeWord = words.find(w => !w.assignedTo && w.status === 'свободно');
@@ -312,7 +308,6 @@ async function loadWordle() {
             }
         } else {
             showNotification('На сегодня нет свободных слов', 'error');
-            showLoading(false);
             return;
         }
     }
@@ -327,8 +322,18 @@ async function loadWordle() {
         
         renderWordle();
     }
-    
-    showLoading(false);
+}
+
+function showEmptyWordle() {
+    currentWordleGame = {
+        word: '?????',
+        status: 'играет',
+        attempts: [],
+        guesses: '',
+        currentGuess: [],
+        letterStatus: {}
+    };
+    renderWordle();
 }
 
 function renderWordle() {
@@ -555,7 +560,7 @@ async function saveWordleProgress() {
 }
 
 // ============================================
-// ЧЕК С ЗАГРУЗКОЙ ФОТО НА GOOGLE DRIVE
+// ЧЕК
 // ============================================
 
 function loadCheck() {
@@ -664,7 +669,6 @@ function updateUploadButton() {
     }
 }
 
-// Конвертация файла в base64
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -677,7 +681,6 @@ function fileToBase64(file) {
     });
 }
 
-// Загрузка чека с фото на Google Drive
 async function uploadCheck() {
     if (!selectedShop || !selectedFile) {
         showNotification('Выберите магазин и файл', 'error');
@@ -712,54 +715,45 @@ async function uploadCheck() {
 }
 
 // ============================================
-// ПРОФИЛЬ
+// ПРОФИЛЬ (с кэшем)
 // ============================================
 
 async function showProfile() {
-    showLoading(true);
-    
-    const userResult = await callAppsScript('getUser', { token: currentUser.token });
-    
-    if (userResult && userResult.success) {
-        currentUser = userResult.user;
-    }
-    
+    // Сразу показываем старые данные
     const html = `
         <div class="profile-container glass">
             <div class="profile-header">
                 <div class="profile-avatar">
-                    ${currentUser.nickname[0].toUpperCase()}
+                    ${currentUser?.nickname[0]?.toUpperCase() || '?'}
                 </div>
                 <div class="profile-info">
-                    <h3>${currentUser.nickname}</h3>
-                    <p>Токен: ${currentUser.token}</p>
+                    <h3>${currentUser?.nickname || 'Загрузка...'}</h3>
+                    <p>Токен: ${currentUser?.token || ''}</p>
                 </div>
             </div>
             
             <div class="balance-card">
                 <span class="balance-label">Баланс</span>
-                <span class="balance-value">${currentUser.balance.toFixed(2)}₽</span>
+                <span class="balance-value">${currentUser?.balance?.toFixed(2) || '0.00'}₽</span>
             </div>
             
             <div class="requisites-section">
                 <h3 class="section-title">Мои реквизиты</h3>
                 <div class="requisites-grid">
-                    <div class="requisite-card" onclick="editRequisite('card')">
+                    <div class="requisite-card">
                         <div class="requisite-icon">💳</div>
                         <div class="requisite-type">Карта</div>
-                        <div class="requisite-value">${currentUser.card || 'Не указана'}</div>
+                        <div class="requisite-value">${currentUser?.card || 'Загрузка...'}</div>
                     </div>
-                    
-                    <div class="requisite-card" onclick="editRequisite('phone')">
+                    <div class="requisite-card">
                         <div class="requisite-icon">📱</div>
                         <div class="requisite-type">Телефон</div>
-                        <div class="requisite-value">${currentUser.phone || 'Не указан'}</div>
+                        <div class="requisite-value">${currentUser?.phone || 'Загрузка...'}</div>
                     </div>
-                    
-                    <div class="requisite-card" onclick="editRequisite('steam')">
+                    <div class="requisite-card">
                         <div class="requisite-icon">🎮</div>
                         <div class="requisite-type">Steam</div>
-                        <div class="requisite-value">${currentUser.steam || 'Не указан'}</div>
+                        <div class="requisite-value">${currentUser?.steam || 'Загрузка...'}</div>
                     </div>
                 </div>
             </div>
@@ -771,30 +765,46 @@ async function showProfile() {
     `;
     
     document.getElementById('mainContent').innerHTML = html;
-    showLoading(false);
-}
-
-function editRequisite(type) {
-    showNotification('Редактирование будет доступно позже', 'info');
+    
+    // Обновляем данные в фоне
+    const userResult = await callAppsScript('getUser', { token: currentUser.token }, true, 30000);
+    
+    if (userResult && userResult.success) {
+        currentUser = userResult.user;
+        showProfile(); // Перерисовываем с новыми данными
+    }
 }
 
 // ============================================
-// ИСТОРИЯ
+// ИСТОРИЯ (с кэшем)
 // ============================================
 
 async function showHistory() {
-    showLoading(true);
+    // Сразу показываем заглушку
+    const html = `
+        <div class="history-container glass">
+            <h2 class="form-title">📜 История операций</h2>
+            <div class="history-list">
+                <p>Загрузка...</p>
+            </div>
+            <div class="form-actions">
+                <button class="cancel-btn" onclick="showMainMenu()">Назад</button>
+            </div>
+        </div>
+    `;
     
-    const result = await callAppsScript('getHistory', { token: currentUser.token });
+    document.getElementById('mainContent').innerHTML = html;
+    
+    // Загружаем данные
+    const result = await callAppsScript('getHistory', { token: currentUser.token }, true, 30000);
     
     if (!result || !result.success) {
-        showLoading(false);
         return;
     }
     
     const history = result.history || [];
     
-    const html = `
+    const fullHtml = `
         <div class="history-container glass">
             <h2 class="form-title">📜 История операций</h2>
             
@@ -815,8 +825,7 @@ async function showHistory() {
         </div>
     `;
     
-    document.getElementById('mainContent').innerHTML = html;
-    showLoading(false);
+    document.getElementById('mainContent').innerHTML = fullHtml;
 }
 
 function renderHistoryItems(history) {
@@ -875,18 +884,11 @@ function filterHistory(type) {
 // ============================================
 
 async function showWithdraw() {
-    showLoading(true);
-    
-    const userResult = await callAppsScript('getUser', { token: currentUser.token });
-    
-    if (userResult && userResult.success) {
-        currentUser = userResult.user;
-    }
-    
+    // Сразу показываем с текущими данными
     const availableMethods = [];
-    if (currentUser.card) availableMethods.push({ id: 'card', name: 'Карта', icon: '💳', details: currentUser.card });
-    if (currentUser.phone) availableMethods.push({ id: 'phone', name: 'Телефон', icon: '📱', details: currentUser.phone });
-    if (currentUser.steam) availableMethods.push({ id: 'steam', name: 'Steam', icon: '🎮', details: currentUser.steam });
+    if (currentUser?.card) availableMethods.push({ id: 'card', name: 'Карта', icon: '💳', details: currentUser.card });
+    if (currentUser?.phone) availableMethods.push({ id: 'phone', name: 'Телефон', icon: '📱', details: currentUser.phone });
+    if (currentUser?.steam) availableMethods.push({ id: 'steam', name: 'Steam', icon: '🎮', details: currentUser.steam });
     
     const html = `
         <div class="withdraw-container glass">
@@ -894,10 +896,10 @@ async function showWithdraw() {
             
             <div class="balance-info">
                 <span class="balance-info-label">Доступно для вывода</span>
-                <span class="balance-info-value">${currentUser.balance.toFixed(2)}₽</span>
+                <span class="balance-info-value">${currentUser?.balance?.toFixed(2) || '0.00'}₽</span>
             </div>
             
-            ${currentUser.balance < 20 ? `
+            ${currentUser?.balance < 20 ? `
                 <div class="warning-message">
                     ⚠️ Минимальная сумма вывода: 20₽
                 </div>
@@ -933,7 +935,14 @@ async function showWithdraw() {
     `;
     
     document.getElementById('mainContent').innerHTML = html;
-    showLoading(false);
+    
+    // Обновляем данные в фоне
+    const userResult = await callAppsScript('getUser', { token: currentUser.token }, true, 30000);
+    
+    if (userResult && userResult.success) {
+        currentUser = userResult.user;
+        showWithdraw(); // Перерисовываем
+    }
 }
 
 function selectWithdrawMethod(methodId) {
@@ -982,11 +991,11 @@ async function submitWithdraw() {
 }
 
 // ============================================
-// АДМИН ПАНЕЛЬ
+// АДМИН ПАНЕЛЬ (БУДЕТ ПОЗЖЕ)
 // ============================================
 
 function showAdminPanel() {
-    showNotification('Админ панель в разработке', 'info');
+    showNotification('Админ панель будет доступна позже', 'info');
 }
 
 // ============================================
