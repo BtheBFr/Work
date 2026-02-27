@@ -1,6 +1,6 @@
 // ============================================
 // WORK от "B the B" | Завод Осколки
-// С КЭШИРОВАНИЕМ И БЫСТРОЙ ЗАГРУЗКОЙ
+// ПОЛНАЯ ВЕРСИЯ С АДМИНКОЙ И КЭШИРОВАНИЕМ
 // ============================================
 
 const API_URL = CONFIG.apiUrl;
@@ -10,11 +10,12 @@ let selectedShop = null;
 let selectedFile = null;
 let selectedMethod = null;
 
-// КЭШ для данных
+// КЭШ ДЛЯ БЫСТРОЙ ЗАГРУЗКИ
 const cache = {
     user: null,
     words: {},
     history: null,
+    admin: null,
     timestamp: {}
 };
 
@@ -24,27 +25,55 @@ const cache = {
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
+    initCursorGlow();
     checkSavedSession();
 });
 
 function initApp() {
+    // Кнопки авторизации
     document.getElementById('showLoginBtn')?.addEventListener('click', showLoginForm);
     document.getElementById('showRegisterBtn')?.addEventListener('click', showRegisterForm);
     
+    // Кнопки пользователя
     document.getElementById('btnProfile')?.addEventListener('click', () => showProfile());
     document.getElementById('btnHistory')?.addEventListener('click', () => showHistory());
     document.getElementById('btnWithdraw')?.addEventListener('click', () => showWithdraw());
     document.getElementById('btnAdmin')?.addEventListener('click', () => showAdminPanel());
     document.getElementById('btnLogout')?.addEventListener('click', logout);
     
+    // Мобильное меню
     document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleMobileMenu);
     
+    // Модальное окно
     document.getElementById('modalClose')?.addEventListener('click', hideModal);
     document.getElementById('modalOverlay')?.addEventListener('click', (e) => {
         if (e.target === document.getElementById('modalOverlay')) {
             hideModal();
         }
     });
+}
+
+// Эффект свечения за курсором
+function initCursorGlow() {
+    const glow = document.querySelector('.cursor-glow');
+    if (!glow) return;
+    
+    let mouseX = 0, mouseY = 0;
+    let glowX = 0, glowY = 0;
+    
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX - 200;
+        mouseY = e.clientY - 200;
+    });
+    
+    function animate() {
+        glowX += (mouseX - glowX) * 0.1;
+        glowY += (mouseY - glowY) * 0.1;
+        glow.style.transform = `translate(${glowX}px, ${glowY}px)`;
+        requestAnimationFrame(animate);
+    }
+    
+    animate();
 }
 
 // ============================================
@@ -74,6 +103,9 @@ async function callAppsScript(action, params = {}, useCache = false, cacheTime =
         console.log(`📦 API ответ: ${action}`, data);
         
         if (!data.success) {
+            if (data.error) {
+                showNotification(data.error, 'error');
+            }
             return null;
         }
         
@@ -86,6 +118,7 @@ async function callAppsScript(action, params = {}, useCache = false, cacheTime =
         return data;
     } catch (error) {
         console.error('❌ API ошибка:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
         return null;
     }
 }
@@ -97,13 +130,15 @@ async function callAppsScript(action, params = {}, useCache = false, cacheTime =
 function checkSavedSession() {
     const savedToken = localStorage.getItem('userToken');
     if (savedToken) {
-        // Сразу показываем интерфейс, не ждем сервер
-        showMainMenu();
+        // Сразу показываем интерфейс (мгновенно)
         document.getElementById('welcomeScreen').style.display = 'none';
         document.getElementById('userPanel').style.display = 'flex';
         document.querySelector('.token-value').textContent = savedToken;
         
-        // Асинхронно загружаем данные
+        // Показываем меню сразу
+        showMainMenu();
+        
+        // Загружаем данные в фоне
         loginWithToken(savedToken, true);
     }
 }
@@ -198,7 +233,7 @@ async function registerUser() {
 }
 
 async function loginWithToken(token, silent = false) {
-    const result = await callAppsScript('login', { token });
+    const result = await callAppsScript('login', { token }, true, 30000); // КЭШ 30 секунд
     
     if (result && result.success) {
         currentUser = result.user;
@@ -206,7 +241,10 @@ async function loginWithToken(token, silent = false) {
         
         if (!silent) {
             hideModal(); // ЗАКРЫВАЕМ МОДАЛКУ
-            showUserInterface();
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('userPanel').style.display = 'flex';
+            document.querySelector('.token-value').textContent = currentUser.token;
+            showMainMenu();
             showNotification(`Добро пожаловать, ${currentUser.nickname}!`, 'success');
         } else {
             // Обновляем данные в фоне
@@ -214,6 +252,7 @@ async function loginWithToken(token, silent = false) {
             document.querySelector('.token-value').textContent = currentUser.token;
         }
         
+        // Проверяем админа
         checkIfAdmin(token);
     } else if (!silent) {
         showNotification('Ошибка входа', 'error');
@@ -221,25 +260,28 @@ async function loginWithToken(token, silent = false) {
 }
 
 async function checkIfAdmin(token) {
-    const result = await callAppsScript('checkAdmin', { token });
+    const result = await callAppsScript('checkAdmin', { token }, true, 60000); // КЭШ 1 минуту
+    
     if (result && result.success && result.isAdmin) {
         document.getElementById('btnAdmin').style.display = 'flex';
+    } else {
+        document.getElementById('btnAdmin').style.display = 'none';
     }
-}
-
-function showUserInterface() {
-    document.getElementById('welcomeScreen').style.display = 'none';
-    document.getElementById('userPanel').style.display = 'flex';
-    document.querySelector('.token-value').textContent = currentUser.token;
-    showMainMenu();
 }
 
 function logout() {
     currentUser = null;
     localStorage.removeItem('userToken');
+    
+    // Очищаем кэш
+    for (let key in cache) {
+        delete cache[key];
+    }
+    
     document.getElementById('welcomeScreen').style.display = 'flex';
     document.getElementById('userPanel').style.display = 'none';
     document.getElementById('btnAdmin').style.display = 'none';
+    showMainMenu();
     showNotification('Вы вышли из аккаунта', 'info');
 }
 
@@ -669,6 +711,7 @@ function updateUploadButton() {
     }
 }
 
+// Конвертация файла в base64
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -681,6 +724,7 @@ function fileToBase64(file) {
     });
 }
 
+// Загрузка чека с фото на Google Drive
 async function uploadCheck() {
     if (!selectedShop || !selectedFile) {
         showNotification('Выберите магазин и файл', 'error');
@@ -740,20 +784,22 @@ async function showProfile() {
             <div class="requisites-section">
                 <h3 class="section-title">Мои реквизиты</h3>
                 <div class="requisites-grid">
-                    <div class="requisite-card">
+                    <div class="requisite-card" onclick="editRequisite('card')">
                         <div class="requisite-icon">💳</div>
                         <div class="requisite-type">Карта</div>
-                        <div class="requisite-value">${currentUser?.card || 'Загрузка...'}</div>
+                        <div class="requisite-value">${currentUser?.card || 'Не указана'}</div>
                     </div>
-                    <div class="requisite-card">
+                    
+                    <div class="requisite-card" onclick="editRequisite('phone')">
                         <div class="requisite-icon">📱</div>
                         <div class="requisite-type">Телефон</div>
-                        <div class="requisite-value">${currentUser?.phone || 'Загрузка...'}</div>
+                        <div class="requisite-value">${currentUser?.phone || 'Не указан'}</div>
                     </div>
-                    <div class="requisite-card">
+                    
+                    <div class="requisite-card" onclick="editRequisite('steam')">
                         <div class="requisite-icon">🎮</div>
                         <div class="requisite-type">Steam</div>
-                        <div class="requisite-value">${currentUser?.steam || 'Загрузка...'}</div>
+                        <div class="requisite-value">${currentUser?.steam || 'Не указан'}</div>
                     </div>
                 </div>
             </div>
@@ -773,6 +819,10 @@ async function showProfile() {
         currentUser = userResult.user;
         showProfile(); // Перерисовываем с новыми данными
     }
+}
+
+function editRequisite(type) {
+    showNotification('Редактирование будет доступно позже', 'info');
 }
 
 // ============================================
@@ -991,11 +1041,311 @@ async function submitWithdraw() {
 }
 
 // ============================================
-// АДМИН ПАНЕЛЬ (БУДЕТ ПОЗЖЕ)
+// АДМИН ПАНЕЛЬ (РАБОЧАЯ!)
 // ============================================
 
-function showAdminPanel() {
-    showNotification('Админ панель будет доступна позже', 'info');
+async function showAdminPanel() {
+    // Проверяем права
+    const adminCheck = await callAppsScript('checkAdmin', { token: currentUser.token });
+    
+    if (!adminCheck || !adminCheck.success || !adminCheck.isAdmin) {
+        showNotification('У вас нет прав администратора', 'error');
+        return;
+    }
+    
+    // Загружаем данные
+    showLoading(true);
+    
+    try {
+        // Загружаем всех пользователей
+        const usersResult = await callAppsScript('getAllUsers', { token: currentUser.token });
+        
+        // Загружаем чеки
+        const checksResult = await callAppsScript('getAllChecks', { token: currentUser.token });
+        
+        // Загружаем выводы
+        const withdrawalsResult = await callAppsScript('getAllWithdrawals', { token: currentUser.token });
+        
+        // Загружаем статистику
+        const statsResult = await callAppsScript('getStats', { token: currentUser.token });
+        
+        const html = `
+            <div class="admin-container glass">
+                <h2 class="form-title">👑 Админ панель</h2>
+                
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="showAdminTab('users')">Пользователи</button>
+                    <button class="tab-btn" onclick="showAdminTab('checks')">Чеки</button>
+                    <button class="tab-btn" onclick="showAdminTab('withdrawals')">Выводы</button>
+                    <button class="tab-btn" onclick="showAdminTab('stats')">Статистика</button>
+                </div>
+                
+                <div class="admin-content" id="adminContent">
+                    ${renderAdminUsers(usersResult?.users || [])}
+                </div>
+                
+                <div class="form-actions">
+                    <button class="cancel-btn" onclick="showMainMenu()">Назад</button>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('mainContent').innerHTML = html;
+        
+        // Сохраняем данные для переключения вкладок
+        window.adminData = {
+            users: usersResult?.users || [],
+            checks: checksResult?.checks || [],
+            withdrawals: withdrawalsResult?.withdrawals || [],
+            stats: statsResult?.stats || {}
+        };
+        
+    } catch (error) {
+        console.error('Admin error:', error);
+        showNotification('Ошибка загрузки админ панели', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function renderAdminUsers(users) {
+    if (!users || users.length === 0) {
+        return '<p>Нет пользователей</p>';
+    }
+    
+    return `
+        <div class="admin-section">
+            <h3>📋 Пользователи (${users.length})</h3>
+            <div class="admin-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Токен</th>
+                            <th>Никнейм</th>
+                            <th>Баланс</th>
+                            <th>Карта</th>
+                            <th>Телефон</th>
+                            <th>Steam</th>
+                            <th>Регистрация</th>
+                            <th>Последний вход</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td>${user[0]}</td>
+                                <td>${user[1]}</td>
+                                <td>${user[2]}₽</td>
+                                <td>${user[3] || '-'}</td>
+                                <td>${user[4] || '-'}</td>
+                                <td>${user[5] || '-'}</td>
+                                <td>${user[6]}</td>
+                                <td>${user[7]}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderAdminChecks(checks) {
+    if (!checks || checks.length === 0) {
+        return '<p>Нет чеков</p>';
+    }
+    
+    return `
+        <div class="admin-section">
+            <h3>🧾 Чеки (${checks.length})</h3>
+            <div class="admin-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Токен</th>
+                            <th>Никнейм</th>
+                            <th>Магазин</th>
+                            <th>Фото</th>
+                            <th>Дата</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${checks.map(check => `
+                            <tr>
+                                <td>${check[0]}</td>
+                                <td>${check[1]}</td>
+                                <td>${check[2]}</td>
+                                <td>${check[3]}</td>
+                                <td><a href="${check[5]}" target="_blank">📸</a></td>
+                                <td>${check[6]} ${check[7]}</td>
+                                <td>${check[8]}</td>
+                                <td>
+                                    <button class="small-btn" onclick="approveCheck('${check[0]}')">✅</button>
+                                    <button class="small-btn" onclick="rejectCheck('${check[0]}')">❌</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderAdminWithdrawals(withdrawals) {
+    if (!withdrawals || withdrawals.length === 0) {
+        return '<p>Нет заявок на вывод</p>';
+    }
+    
+    return `
+        <div class="admin-section">
+            <h3>💸 Заявки на вывод (${withdrawals.length})</h3>
+            <div class="admin-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Токен</th>
+                            <th>Никнейм</th>
+                            <th>Сумма</th>
+                            <th>Способ</th>
+                            <th>Реквизиты</th>
+                            <th>Дата</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${withdrawals.map(w => `
+                            <tr>
+                                <td>${w[0]}</td>
+                                <td>${w[1]}</td>
+                                <td>${w[2]}</td>
+                                <td>${w[3]}₽</td>
+                                <td>${w[4]}</td>
+                                <td>${w[5]}</td>
+                                <td>${w[6]}</td>
+                                <td>${w[7]}</td>
+                                <td>
+                                    <button class="small-btn" onclick="approveWithdrawal('${w[0]}')">✅</button>
+                                    <button class="small-btn" onclick="rejectWithdrawal('${w[0]}')">❌</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderAdminStats(stats) {
+    return `
+        <div class="admin-section">
+            <h3>📊 Статистика</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">${stats.totalUsers || 0}</div>
+                    <div class="stat-label">Всего пользователей</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.totalBalance || 0}₽</div>
+                    <div class="stat-label">Общий баланс</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.totalChecks || 0}</div>
+                    <div class="stat-label">Всего чеков</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.pendingChecks || 0}</div>
+                    <div class="stat-label">Ожидают проверки</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.totalWithdrawals || 0}</div>
+                    <div class="stat-label">Всего выводов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.pendingWithdrawals || 0}₽</div>
+                    <div class="stat-label">Ожидают вывода</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showAdminTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    let content = '';
+    
+    switch(tab) {
+        case 'users':
+            content = renderAdminUsers(window.adminData.users);
+            break;
+        case 'checks':
+            content = renderAdminChecks(window.adminData.checks);
+            break;
+        case 'withdrawals':
+            content = renderAdminWithdrawals(window.adminData.withdrawals);
+            break;
+        case 'stats':
+            content = renderAdminStats(window.adminData.stats);
+            break;
+    }
+    
+    document.getElementById('adminContent').innerHTML = content;
+}
+
+async function approveCheck(checkId) {
+    const result = await callAppsScript('approveCheck', {
+        token: currentUser.token,
+        checkId: checkId
+    });
+    
+    if (result && result.success) {
+        showNotification('Чек одобрен!', 'success');
+        showAdminPanel(); // Обновляем
+    }
+}
+
+async function rejectCheck(checkId) {
+    const result = await callAppsScript('rejectCheck', {
+        token: currentUser.token,
+        checkId: checkId
+    });
+    
+    if (result && result.success) {
+        showNotification('Чек отклонен', 'info');
+        showAdminPanel(); // Обновляем
+    }
+}
+
+async function approveWithdrawal(withdrawalId) {
+    const result = await callAppsScript('approveWithdrawal', {
+        token: currentUser.token,
+        withdrawalId: withdrawalId
+    });
+    
+    if (result && result.success) {
+        showNotification('Вывод одобрен!', 'success');
+        showAdminPanel(); // Обновляем
+    }
+}
+
+async function rejectWithdrawal(withdrawalId) {
+    const result = await callAppsScript('rejectWithdrawal', {
+        token: currentUser.token,
+        withdrawalId: withdrawalId
+    });
+    
+    if (result && result.success) {
+        showNotification('Вывод отклонен', 'info');
+        showAdminPanel(); // Обновляем
+    }
 }
 
 // ============================================
@@ -1016,6 +1366,13 @@ function toggleMobileMenu() {
     const panel = document.getElementById('userPanel');
     btn.classList.toggle('active');
     panel.classList.toggle('show');
+}
+
+function showLoading(show) {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.style.display = show ? 'flex' : 'none';
+    }
 }
 
 function showNotification(message, type = 'info', duration = 3000) {
