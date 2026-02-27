@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Work от B the B | Завод Осколки</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://apis.google.com/js/api.js"></script>
+</head>
+<body>
+    <div class="cursor-glow"></div>
+    
+    <div class="app-container">
+        <!-- Шапка с градиентом -->
+        <header class="header glass">
+            <div class="logo-wrapper">
+                <div class="logo-icon">
+                    <span class="logo-emoji">🏭</span>
+                </div>
+                <div class="logo-text">
+                    <h1>Work от "B the B"</h1>
+                    <div class="logo-sub">Завод Осколки</div>
+                </div>
+            </div>
+            
+            <div class="user-panel glass" id="userPanel" style="display: none;">
+                <div class="token-chip" id="tokenBadge">
+                    <span class="dot"></span>
+                    <span class="token-value"></span>
+                </div>
+                <div class="user-actions">
+                    <button class="icon-btn" id="btnProfile" title="Профиль">
+                        <span class="btn-icon">👤</span>
+                        <span class="btn-label">Профиль</span>
+                    </button>
+                    <button class="icon-btn" id="btnHistory" title="История">
+                        <span class="btn-icon">📜</span>
+                        <span class="btn-label">История</span>
+                    </button>
+                    <button class="icon-btn" id="btnWithdraw" title="Вывод">
+                        <span class="btn-icon">💸</span>
+                        <span class="btn-label">Вывод</span>
+                    </button>
+                    <button class="icon-btn logout" id="btnLogout" title="Выйти">
+                        <span class="btn-icon">🚪</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Мобильное меню -->
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="main-content" id="mainContent">
+            <div class="welcome-screen fade-in">
+                <div class="welcome-card glass">
+                    <div class="welcome-icon">🎮</div>
+                    <h2>Добро пожаловать на завод!</h2>
+                    <p class="welcome-text">Зарабатывай играя в Wordle и загружая чеки</p>
+                    
+                    <div class="auth-buttons">
+                        <button class="btn-primary glow" id="showLoginBtn">
+                            <span>Войти</span>
+                            <span class="btn-shine"></span>
+                        </button>
+                        <button class="btn-secondary" id="showRegisterBtn">
+                            <span>Регистрация</span>
+                        </button>
+                    </div>
+
+                    <div class="bot-card glass">
+                        <div class="bot-icon">🤖</div>
+                        <div class="bot-info">
+                            <p>Получить токен можно в боте:</p>
+                            <a href="https://t.me/WorkBtheB_bot" target="_blank" class="bot-link">
+                                @WorkBtheB_bot
+                                <span class="link-arrow">→</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Модальное окно -->
+        <div class="modal-overlay" id="modalOverlay">
+            <div class="modal glass" id="modal">
+                <button class="modal-close" id="modalClose">✕</button>
+                <div class="modal-content" id="modalContent"></div>
+            </div>
+        </div>
+
+        <!-- Уведомления -->
+        <div class="notification-container" id="notificationContainer"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
