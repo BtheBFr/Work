@@ -11,7 +11,7 @@
     <div class="cursor-glow"></div>
     
     <div class="app-container">
-        <!-- Шапка с градиентом -->
+        <!-- Шапка -->
         <header class="header glass">
             <div class="logo-wrapper">
                 <div class="logo-icon">
@@ -41,13 +41,16 @@
                         <span class="btn-icon">💸</span>
                         <span class="btn-label">Вывод</span>
                     </button>
+                    <button class="icon-btn admin-btn" id="btnAdmin" title="Админ панель" style="display: none;">
+                        <span class="btn-icon">👑</span>
+                        <span class="btn-label">Админ</span>
+                    </button>
                     <button class="icon-btn logout" id="btnLogout" title="Выйти">
                         <span class="btn-icon">🚪</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Мобильное меню -->
             <button class="mobile-menu-btn" id="mobileMenuBtn">
                 <span></span>
                 <span></span>
@@ -57,7 +60,14 @@
 
         <!-- Основной контент -->
         <main class="main-content" id="mainContent">
-            <div class="welcome-screen fade-in">
+            <!-- Загрузка -->
+            <div class="loading-screen" id="loadingScreen" style="display: none;">
+                <div class="loader"></div>
+                <p>Загрузка...</p>
+            </div>
+            
+            <!-- Приветственный экран -->
+            <div class="welcome-screen fade-in" id="welcomeScreen">
                 <div class="welcome-card glass">
                     <div class="welcome-icon">🎮</div>
                     <h2>Добро пожаловать на завод!</h2>
