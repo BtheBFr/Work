@@ -1179,16 +1179,16 @@ function logout() {
     showNotification('Вы вышли из аккаунта', 'info');
 }
 
-// Авторизация Google Sheets
+// Авторизация Google Sheets (ИСПРАВЛЕНО)
 function initGoogleSheets() {
     gapi.load('client', () => {
         gapi.client.init({
-            apiKey: CONFIG.apiKey,
-            clientId: CONFIG.clientId,
-            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-            scope: 'https://www.googleapis.com/auth/spreadsheets'
+            apiKey: CONFIG.apiKey,  // Только API ключ
+            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
         }).then(() => {
-            console.log('Google Sheets API готов');
+            console.log('✅ Google Sheets API готов');
+        }).catch(error => {
+            console.error('❌ Ошибка инициализации:', error);
         });
     });
 }
