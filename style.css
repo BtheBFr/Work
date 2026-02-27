@@ -29,7 +29,6 @@ body {
     color: var(--text);
     min-height: 100vh;
     overflow-x: hidden;
-    position: relative;
 }
 
 /* Эффект свечения за курсором */
@@ -42,7 +41,6 @@ body {
     pointer-events: none;
     z-index: 9999;
     opacity: 0.3;
-    transition: transform 0.1s;
     filter: blur(40px);
 }
 
@@ -169,6 +167,7 @@ body {
 .user-actions {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 /* Кнопки */
@@ -216,6 +215,16 @@ body {
     border-color: var(--danger);
 }
 
+.icon-btn.admin-btn {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: gold;
+}
+
+.icon-btn.admin-btn:hover {
+    border-color: gold;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
 .btn-icon {
     font-size: 18px;
     position: relative;
@@ -250,6 +259,8 @@ body {
 .main-content {
     min-height: calc(100vh - 120px);
     animation: fadeIn 0.5s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 @keyframes fadeIn {
@@ -263,12 +274,35 @@ body {
     }
 }
 
+/* Загрузка */
+.loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 20px;
+}
+
+.loader {
+    width: 50px;
+    height: 50px;
+    border: 3px solid var(--bg-secondary);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Приветственный экран */
 .welcome-screen {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 200px);
+    min-height: 70vh;
 }
 
 .welcome-card {
@@ -330,6 +364,81 @@ body {
     margin-bottom: 32px;
     font-size: 18px;
     line-height: 1.6;
+}
+
+/* Главное меню */
+.main-menu {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    min-height: 60vh;
+    flex-wrap: wrap;
+    padding: 20px;
+}
+
+.menu-btn {
+    width: 280px;
+    height: 280px;
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.menu-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.menu-btn:hover::before {
+    width: 400px;
+    height: 400px;
+}
+
+.menu-btn:hover {
+    border-color: var(--accent);
+    transform: scale(1.05);
+    box-shadow: 0 0 30px var(--accent-glow);
+}
+
+.menu-btn span {
+    font-size: 64px;
+    position: relative;
+    z-index: 1;
+}
+
+.menu-btn h3 {
+    font-size: 32px;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.menu-btn p {
+    color: var(--text-secondary);
+    font-size: 16px;
+    position: relative;
+    z-index: 1;
 }
 
 /* Кнопки авторизации */
@@ -543,6 +652,7 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    max-width: 400px;
 }
 
 .notification.error {
@@ -663,12 +773,6 @@ body {
     margin-top: 4px;
 }
 
-.form-error {
-    color: var(--danger);
-    font-size: 12px;
-    margin-top: 4px;
-}
-
 .form-actions {
     display: flex;
     gap: 12px;
@@ -709,6 +813,8 @@ body {
 /* Профиль */
 .profile-container {
     padding: 20px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .profile-header {
@@ -813,17 +919,20 @@ body {
 .requisite-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(0, 255, 136, 0.1) 0%, transparent 50%);
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
     opacity: 0;
-    transition: opacity 0.3s;
 }
 
 .requisite-card:hover::before {
-    opacity: 1;
+    width: 300px;
+    height: 300px;
+    opacity: 0.5;
 }
 
 .requisite-card:hover {
@@ -834,27 +943,24 @@ body {
 .requisite-icon {
     font-size: 24px;
     margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
 }
 
 .requisite-type {
     font-size: 14px;
     color: var(--text-secondary);
     margin-bottom: 4px;
+    position: relative;
+    z-index: 1;
 }
 
 .requisite-value {
     font-size: 16px;
     font-weight: 600;
     word-break: break-all;
-}
-
-.requisite-add {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--accent);
-    background: rgba(0, 255, 136, 0.05);
+    position: relative;
+    z-index: 1;
 }
 
 /* Wordle игра */
@@ -956,6 +1062,27 @@ body {
     color: var(--text-secondary);
 }
 
+.win-message {
+    text-align: center;
+    padding: 20px;
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    margin: 20px 0;
+    font-size: 18px;
+    animation: pulse 2s infinite;
+}
+
+.lose-message {
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid var(--danger);
+    border-radius: 16px;
+    margin: 20px 0;
+    font-size: 18px;
+}
+
 /* Клавиатура */
 .wordle-keyboard {
     display: flex;
@@ -968,6 +1095,7 @@ body {
     display: flex;
     justify-content: center;
     gap: 6px;
+    flex-wrap: wrap;
 }
 
 .key {
@@ -1019,6 +1147,8 @@ body {
 /* История */
 .history-container {
     padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .history-filters {
@@ -1027,6 +1157,7 @@ body {
     margin-bottom: 24px;
     overflow-x: auto;
     padding-bottom: 8px;
+    flex-wrap: wrap;
 }
 
 .filter-btn {
@@ -1100,6 +1231,8 @@ body {
 .history-amount {
     font-size: 18px;
     font-weight: 700;
+    min-width: 80px;
+    text-align: right;
 }
 
 .history-amount.positive {
@@ -1114,11 +1247,14 @@ body {
     font-size: 12px;
     color: var(--text-secondary);
     text-align: right;
+    min-width: 100px;
 }
 
 /* Вывод средств */
 .withdraw-container {
     padding: 20px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .balance-info {
@@ -1140,6 +1276,15 @@ body {
     font-size: 24px;
     font-weight: 700;
     color: var(--accent);
+}
+
+.warning-message {
+    padding: 16px;
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid var(--danger);
+    border-radius: 16px;
+    margin-bottom: 20px;
+    text-align: center;
 }
 
 .withdraw-methods {
@@ -1245,7 +1390,6 @@ body {
     margin-top: 20px;
 }
 
-/* Чек-лист магазинов */
 .shops-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -1392,6 +1536,11 @@ body {
     .history-date {
         width: 100%;
         text-align: left;
+        min-width: auto;
+    }
+
+    .history-amount {
+        min-width: auto;
     }
 
     .withdraw-methods {
@@ -1420,6 +1569,19 @@ body {
 
     .logo-sub {
         font-size: 10px;
+    }
+
+    .menu-btn {
+        width: 240px;
+        height: 240px;
+    }
+
+    .menu-btn span {
+        font-size: 48px;
+    }
+
+    .menu-btn h3 {
+        font-size: 24px;
     }
 
     .wordle-cell {
@@ -1469,14 +1631,6 @@ body {
     animation: shimmer 2s infinite;
 }
 
-/* Скелетон загрузки */
-.skeleton {
-    background: linear-gradient(90deg, #2a2a3a 25%, #3a3a4a 50%, #2a2a3a 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 8px;
-}
-
 /* Скроллбар */
 ::-webkit-scrollbar {
     width: 8px;
@@ -1494,10 +1648,4 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--accent-dark);
-}
-
-/* Выделение текста */
-::selection {
-    background: var(--accent);
-    color: var(--bg-primary);
 }
