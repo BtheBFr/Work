@@ -1,6 +1,6 @@
 // ============================================
 // WORK от "B the B" | Завод Осколки
-// Apps Script версия
+// Apps Script версия (ОПТИМИЗИРОВАННАЯ)
 // ============================================
 
 // Конфигурация
@@ -10,6 +10,8 @@ let currentWordleGame = null;
 let selectedShop = null;
 let selectedFile = null;
 let selectedMethod = null;
+let isLoading = false;
+let pendingRequests = new Map();
 
 // ============================================
 // ИНИЦИАЛИЗАЦИЯ
@@ -27,9 +29,10 @@ function initApp() {
     document.getElementById('showRegisterBtn')?.addEventListener('click', showRegisterForm);
     
     // Кнопки пользователя
-    document.getElementById('btnProfile')?.addEventListener('click', showProfile);
-    document.getElementById('btnHistory')?.addEventListener('click', showHistory);
-    document.getElementById('btnWithdraw')?.addEventListener('click', showWithdraw);
+    document.getElementById('btnProfile')?.addEventListener('click', () => showProfile());
+    document.getElementById('btnHistory')?.addEventListener('click', () => showHistory());
+    document.getElementById('btnWithdraw')?.addEventListener('click', () => showWithdraw());
+    document.getElementById('btnAdmin')?.addEventListener('click', () => showAdminPanel());
     document.getElementById('btnLogout')?.addEventListener('click', logout);
     
     // Мобильное меню
@@ -49,16 +52,44 @@ function initCursorGlow() {
     const glow = document.querySelector('.cursor-glow');
     if (!glow) return;
     
+    let mouseX = 0, mouseY = 0;
+    let glowX = 0, glowY = 0;
+    
     document.addEventListener('mousemove', (e) => {
-        glow.style.transform = `translate(${e.clientX - 200}px, ${e.clientY - 200}px)`;
+        mouseX = e.clientX - 200;
+        mouseY = e.clientY - 200;
     });
+    
+    function animate() {
+        glowX += (mouseX - glowX) * 0.1;
+        glowY += (mouseY - glowY) * 0.1;
+        glow.style.transform = `translate(${glowX}px, ${glowY}px)`;
+        requestAnimationFrame(animate);
+    }
+    
+    animate();
 }
 
 // ============================================
-// РАБОТА С API
+// РАБОТА С API (с кэшированием)
 // ============================================
 
-async function callAppsScript(action, params = {}) {
+async function callAppsScript(action, params = {}, useCache = false) {
+    // Проверяем загрузку
+    if (isLoading) {
+        showNotification('Подождите, выполняется запрос...', 'warning');
+        return null;
+    }
+    
+    // Проверяем кэш
+    const cacheKey = `${action}_${JSON.stringify(params)}`;
+    if (useCache && pendingRequests.has(cacheKey)) {
+        return pendingRequests.get(cacheKey);
+    }
+    
+    isLoading = true;
+    showLoading(true);
+    
     try {
         const urlParams = new URLSearchParams({
             action: action,
@@ -77,11 +108,27 @@ async function callAppsScript(action, params = {}) {
             return null;
         }
         
+        // Сохраняем в кэш
+        if (useCache) {
+            pendingRequests.set(cacheKey, data);
+            setTimeout(() => pendingRequests.delete(cacheKey), 5000);
+        }
+        
         return data;
     } catch (error) {
         console.error('❌ API ошибка:', error);
         showNotification('Ошибка соединения с сервером', 'error');
         return null;
+    } finally {
+        isLoading = false;
+        showLoading(false);
+    }
+}
+
+function showLoading(show) {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.style.display = show ? 'flex' : 'none';
     }
 }
 
@@ -100,10 +147,10 @@ function showLoginForm() {
     const form = `
         <div class="form-container">
             <h2 class="form-title">🔐 Вход</h2>
-            <form onsubmit="event.preventDefault(); loginWithToken(document.getElementById('loginToken').value);">
+            <form id="loginForm" onsubmit="event.preventDefault(); loginWithToken(document.getElementById('loginToken').value);">
                 <div class="form-group">
                     <label>Токен</label>
-                    <input type="text" id="loginToken" placeholder="Введите ваш токен" required>
+                    <input type="text" id="loginToken" placeholder="Введите ваш токен" required autofocus>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="submit-btn">Войти</button>
@@ -120,13 +167,18 @@ function showLoginForm() {
         </div>
     `;
     showModal(form);
+    
+    // Фокус на поле ввода
+    setTimeout(() => {
+        document.getElementById('loginToken')?.focus();
+    }, 100);
 }
 
 function showRegisterForm() {
     const form = `
         <div class="form-container">
             <h2 class="form-title">📝 Регистрация</h2>
-            <form onsubmit="event.preventDefault(); registerUser()">
+            <form id="registerForm" onsubmit="event.preventDefault(); registerUser()">
                 <div class="form-group">
                     <label>Токен (получите в боте)</label>
                     <input type="text" id="regToken" placeholder="Введите токен" required>
@@ -187,32 +239,34 @@ async function loginWithToken(token) {
     if (result && result.success) {
         currentUser = result.user;
         localStorage.setItem('userToken', token);
+        hideModal();
         showUserInterface();
-        
-        // Проверка админа через таблицу (позже)
         checkIfAdmin(token);
-        
         showNotification(`Добро пожаловать, ${currentUser.nickname}!`, 'success');
     }
 }
 
 async function checkIfAdmin(token) {
-    // Проверка будет позже, когда добавим лист settings
-    // Пока просто заглушка
+    // Проверка админа через таблицу
+    const result = await callAppsScript('checkAdmin', { token });
+    if (result && result.success && result.isAdmin) {
+        document.getElementById('btnAdmin').style.display = 'flex';
+    }
 }
 
 function showUserInterface() {
-    document.querySelector('.welcome-screen').style.display = 'none';
+    document.getElementById('welcomeScreen').style.display = 'none';
     document.getElementById('userPanel').style.display = 'flex';
-    document.getElementById('tokenBadge').querySelector('.token-value').textContent = currentUser.token;
+    document.querySelector('.token-value').textContent = currentUser.token;
     showMainMenu();
 }
 
 function logout() {
     currentUser = null;
     localStorage.removeItem('userToken');
-    document.querySelector('.welcome-screen').style.display = 'flex';
+    document.getElementById('welcomeScreen').style.display = 'flex';
     document.getElementById('userPanel').style.display = 'none';
+    document.getElementById('btnAdmin').style.display = 'none';
     showMainMenu();
     showNotification('Вы вышли из аккаунта', 'info');
 }
@@ -244,11 +298,16 @@ function showMainMenu() {
 // ============================================
 
 async function loadWordle() {
+    showLoading(true);
+    
     const today = new Date().toLocaleDateString('ru-RU');
     
     const result = await callAppsScript('getWords', { date: today });
     
-    if (!result || !result.success) return;
+    if (!result || !result.success) {
+        showLoading(false);
+        return;
+    }
     
     const words = result.words;
     
@@ -279,6 +338,7 @@ async function loadWordle() {
             }
         } else {
             showNotification('На сегодня нет свободных слов', 'error');
+            showLoading(false);
             return;
         }
     }
@@ -293,6 +353,8 @@ async function loadWordle() {
         
         renderWordle();
     }
+    
+    showLoading(false);
 }
 
 function renderWordle() {
@@ -489,8 +551,6 @@ function checkWord(guess, target) {
 }
 
 async function awardWordleWin() {
-    const newBalance = currentUser.balance + 0.15;
-    
     const result = await callAppsScript('updateBalance', {
         token: currentUser.token,
         amount: 0.15
@@ -505,7 +565,7 @@ async function awardWordleWin() {
             description: `Отгадал слово: ${currentWordleGame.word}`
         });
         
-        currentUser.balance = newBalance;
+        currentUser.balance = result.balance;
         showNotification('+0.15₽ за слово!', 'success');
     }
 }
@@ -635,9 +695,6 @@ async function uploadCheck() {
     
     showNotification('Загрузка...', 'info');
     
-    // Пока без загрузки фото на Google Drive
-    // Просто сохраняем запись о чеке
-    
     const result = await callAppsScript('addCheck', {
         token: currentUser.token,
         nickname: currentUser.nickname,
@@ -656,6 +713,8 @@ async function uploadCheck() {
 // ============================================
 
 async function showProfile() {
+    showLoading(true);
+    
     const userResult = await callAppsScript('getUser', { token: currentUser.token });
     
     if (userResult && userResult.success) {
@@ -709,11 +768,11 @@ async function showProfile() {
     `;
     
     document.getElementById('mainContent').innerHTML = html;
+    showLoading(false);
 }
 
 function editRequisite(type) {
-    // Функция для редактирования реквизитов
-    showNotification('Редактирование будет позже', 'info');
+    showNotification('Редактирование будет доступно позже', 'info');
 }
 
 // ============================================
@@ -721,9 +780,14 @@ function editRequisite(type) {
 // ============================================
 
 async function showHistory() {
+    showLoading(true);
+    
     const result = await callAppsScript('getHistory', { token: currentUser.token });
     
-    if (!result || !result.success) return;
+    if (!result || !result.success) {
+        showLoading(false);
+        return;
+    }
     
     const history = result.history || [];
     
@@ -749,6 +813,7 @@ async function showHistory() {
     `;
     
     document.getElementById('mainContent').innerHTML = html;
+    showLoading(false);
 }
 
 function renderHistoryItems(history) {
@@ -807,6 +872,8 @@ function filterHistory(type) {
 // ============================================
 
 async function showWithdraw() {
+    showLoading(true);
+    
     const userResult = await callAppsScript('getUser', { token: currentUser.token });
     
     if (userResult && userResult.success) {
@@ -864,6 +931,7 @@ async function showWithdraw() {
     `;
     
     document.getElementById('mainContent').innerHTML = html;
+    showLoading(false);
 }
 
 function selectWithdrawMethod(methodId) {
@@ -909,6 +977,14 @@ async function submitWithdraw() {
         showNotification('Заявка на вывод создана!', 'success');
         showMainMenu();
     }
+}
+
+// ============================================
+// АДМИН ПАНЕЛЬ
+// ============================================
+
+function showAdminPanel() {
+    showNotification('Админ панель в разработке', 'info');
 }
 
 // ============================================
