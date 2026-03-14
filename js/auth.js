@@ -17,6 +17,7 @@ async function register() {
         return;
     }
 
+    showLoader();
     try {
         const response = await fetch(`${SCRIPT_URL}?action=checkToken&token=${token}`);
         const data = await response.json();
@@ -34,6 +35,8 @@ async function register() {
         }
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader();
     }
 }
 
@@ -43,6 +46,7 @@ async function login() {
 }
 
 async function loginUser(token) {
+    showLoader();
     try {
         const response = await fetch(`${SCRIPT_URL}?action=getUserData&token=${token}`);
         const data = await response.json();
@@ -54,6 +58,7 @@ async function loginUser(token) {
             document.getElementById('mainSite').style.display = 'block';
             updateUI();
             
+            // Админка показывается если в таблице TRUE
             if (data.isAdmin) {
                 document.getElementById('adminBtn').style.display = 'block';
             }
@@ -62,6 +67,8 @@ async function loginUser(token) {
         }
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader();
     }
 }
 
@@ -72,6 +79,7 @@ async function saveRequisites() {
         steam: document.getElementById('steam').value
     };
 
+    showLoader();
     try {
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
@@ -92,5 +100,7 @@ async function saveRequisites() {
         }
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader();
     }
 }
