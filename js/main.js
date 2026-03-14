@@ -50,10 +50,21 @@ function createBackgroundAnimation() {
 function loadFromCache() {
     const saved = localStorage.getItem('work_user');
     if (saved) {
-        currentUser = JSON.parse(saved);
-        document.getElementById('authModal').classList.remove('active');
-        document.getElementById('mainSite').style.display = 'block';
-        updateUI();
+        try {
+            currentUser = JSON.parse(saved);
+            console.log('Загружено из кеша:', currentUser); // Отладка
+            document.getElementById('authModal').classList.remove('active');
+            document.getElementById('mainSite').style.display = 'block';
+            updateUI();
+            
+            // Проверяем админа
+            if (currentUser.isAdmin === true || currentUser.isAdmin === 'TRUE') {
+                document.getElementById('adminBtn').style.display = 'block';
+                console.log('Админ кнопка показана (из кеша)');
+            }
+        } catch(e) {
+            console.error('Ошибка загрузки кеша:', e);
+        }
     }
 }
 
@@ -64,7 +75,7 @@ function saveToCache() {
 }
 
 // === ВЫХОД ===
-function logout() {
+window.logout = function() {
     if (confirm('Выйти из аккаунта?')) {
         localStorage.removeItem('work_user');
         currentUser = null;
@@ -86,9 +97,17 @@ function updateUI() {
             showLoader();
             const response = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
             const data = await response.json();
+            console.log('Обновление данных:', data); // Отладка
+            
             if (data.success) {
                 currentUser = { ...currentUser, ...data };
                 saveToCache();
+                
+                // Проверяем админа снова
+                if (currentUser.isAdmin === true || currentUser.isAdmin === 'TRUE') {
+                    document.getElementById('adminBtn').style.display = 'block';
+                    console.log('Админ кнопка показана (обновление)');
+                }
             }
         } catch(e) {
             console.log('Ошибка обновления:', e);
@@ -99,6 +118,6 @@ function updateUI() {
 }
 
 // === РЕКЛАМА ===
-function openAd() {
+window.openAd = function() {
     window.open('https://bthebfr.github.io/btheb-about/', '_blank');
 }
