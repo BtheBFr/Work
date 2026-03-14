@@ -3,9 +3,20 @@
 function uploadCheck() {
     const modal = document.getElementById('checkModal');
     
+    // Делаем красивый выбор даты
+    const dateInput = document.getElementById('checkDate');
+    dateInput.type = 'date';
+    dateInput.style.padding = '15px 20px';
+    dateInput.style.background = '#0f0f0f';
+    dateInput.style.border = '2px solid #333';
+    dateInput.style.borderRadius = '50px';
+    dateInput.style.color = 'white';
+    dateInput.style.width = '100%';
+    dateInput.style.margin = '10px 0';
+    
     // Проверяем, создан ли красивый выбор файла
-    const fileInput = document.getElementById('checkPhoto');
     if (!document.querySelector('.file-input-wrapper')) {
+        const fileInput = document.getElementById('checkPhoto');
         fileInput.style.display = 'none';
         
         const wrapper = document.createElement('div');
@@ -18,7 +29,6 @@ function uploadCheck() {
             <span id="fileName">Файл не выбран</span>
         `;
         
-        // Создаем кнопку выбора файла
         const fileButton = document.createElement('input');
         fileButton.type = 'file';
         fileButton.className = 'file-input';
@@ -27,7 +37,6 @@ function uploadCheck() {
         
         fileButton.addEventListener('change', function() {
             document.getElementById('fileName').textContent = this.files[0] ? this.files[0].name : 'Файл не выбран';
-            // Копируем файл в оригинальный input
             if (this.files[0]) {
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(this.files[0]);
@@ -38,7 +47,6 @@ function uploadCheck() {
         wrapper.appendChild(fileButton);
         wrapper.appendChild(label);
         
-        // Вставляем после select
         const selectWrapper = document.querySelector('.custom-select');
         selectWrapper.insertAdjacentElement('afterend', wrapper);
     }
@@ -87,6 +95,9 @@ async function submitCheck() {
             if (data.success) {
                 alert('Чек отправлен на проверку');
                 closeCheck();
+                document.getElementById('fileName').textContent = 'Файл не выбран';
+                document.getElementById('checkDate').value = '';
+                document.getElementById('checkPhoto').value = '';
             } else {
                 alert(data.error);
             }
@@ -100,7 +111,6 @@ async function submitCheck() {
     reader.readAsDataURL(file);
 }
 
-// Делаем функции глобальными
 window.uploadCheck = uploadCheck;
 window.closeCheck = closeCheck;
 window.submitCheck = submitCheck;
