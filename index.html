@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work - Заработок</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Модалка авторизации -->
+    <div id="authModal" class="modal active">
+        <div class="modal-content">
+            <h2>Work</h2>
+            <p class="subtitle">от B the B и Завода "Осколки"</p>
+            
+            <div class="auth-buttons">
+                <button class="btn btn-primary" onclick="showRegister()">Регистрация</button>
+                <button class="btn btn-secondary" onclick="showLogin()">Вход</button>
+            </div>
+
+            <div id="registerForm" style="display:none;">
+                <h3>Регистрация</h3>
+                <p class="info-text">Получи токен в Telegram боте:</p>
+                <a href="https://t.me/WorkBtheB_bot" target="_blank" class="btn btn-telegram">@WorkBtheB_bot</a>
+                <input type="text" id="regToken" placeholder="Введите токен" class="input">
+                <button class="btn btn-primary" onclick="register()">Продолжить</button>
+            </div>
+
+            <div id="requisitesForm" style="display:none;">
+                <h3>Введите реквизиты</h3>
+                <p class="hint">Минимум один</p>
+                <input type="text" id="phone" placeholder="Телефон" class="input">
+                <input type="text" id="card" placeholder="Номер карты" class="input">
+                <input type="text" id="steam" placeholder="Логин Steam" class="input">
+                <button class="btn btn-primary" onclick="saveRequisites()">Сохранить</button>
+            </div>
+
+            <div id="loginForm" style="display:none;">
+                <h3>Вход</h3>
+                <input type="text" id="loginToken" placeholder="Введите токен" class="input">
+                <button class="btn btn-primary" onclick="login()">Войти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной сайт -->
+    <div id="mainSite" style="display:none;">
+        <!-- Верхние кнопки -->
+        <div class="top-panel">
+            <button class="btn-icon" onclick="showProfile()">👤 Профиль</button>
+            <button class="btn-icon" onclick="showWithdraw()">💸 Вывод</button>
+            <button class="btn-icon" onclick="showHistory()">📜 История</button>
+            <button class="btn-icon" onclick="showAdmin()" id="adminBtn" style="display:none;">⚙️ Админ</button>
+            <button class="btn-icon" onclick="openAd()">📢 Реклама</button>
+        </div>
+
+        <!-- Центральные кнопки -->
+        <div class="center-panel">
+            <button class="btn-big" onclick="playWordle()">Wordle</button>
+            <button class="btn-big" onclick="uploadCheck()">Чек</button>
+            <button class="btn-big" onclick="showLinks()">Ссылки</button>
+        </div>
+
+        <!-- Профиль -->
+        <div id="profileModal" class="modal">
+            <div class="modal-content">
+                <h2>Профиль</h2>
+                <p><strong>Имя:</strong> <span id="profileName"></span></p>
+                <p><strong>Баланс:</strong> <span id="profileBalance"></span> ₽</p>
+                <p><strong>Переходы:</strong> <span id="profileClicks"></span></p>
+                <p><strong>Заработано с ссылок:</strong> <span id="profileEarned"></span> ₽</p>
+                
+                <p><strong>Токен:</strong> 
+                    <span id="tokenHidden" onclick="showToken()">••••••••</span>
+                    <span id="tokenVisible" style="display:none;"></span>
+                </p>
+
+                <h3>Реквизиты</h3>
+                <input type="text" id="profilePhone" placeholder="Телефон" class="input">
+                <input type="text" id="profileCard" placeholder="Карта" class="input">
+                <input type="text" id="profileSteam" placeholder="Steam" class="input">
+                <button class="btn btn-primary" onclick="updateRequisites()">Обновить</button>
+                <button class="btn btn-secondary" onclick="closeProfile()">Закрыть</button>
+            </div>
+        </div>
+
+        <!-- Вывод -->
+        <div id="withdrawModal" class="modal">
+            <div class="modal-content">
+                <h2>Вывод средств</h2>
+                <p class="info-text">Мин. сумма 20 ₽. Возможна комиссия.</p>
+                <input type="number" id="withdrawAmount" placeholder="Сумма" class="input">
+                
+                <select id="withdrawType" class="select">
+                    <option value="phone">Телефон</option>
+                    <option value="card">Карта</option>
+                    <option value="steam">Steam</option>
+                </select>
+                
+                <input type="password" id="secretCode" placeholder="Секретный код" class="input">
+                <button class="btn btn-primary" onclick="withdraw()">Вывести</button>
+                <button class="btn btn-secondary" onclick="closeWithdraw()">Закрыть</button>
+            </div>
+        </div>
+
+        <!-- Wordle -->
+        <div id="wordleModal" class="modal">
+            <div class="modal-content">
+                <h2>Wordle</h2>
+                <div id="wordleGame">
+                    <!-- Сетка будет создана через JS -->
+                </div>
+                <div id="wordleKeyboard" class="keyboard">
+                    <!-- Клавиатура будет создана через JS -->
+                </div>
+                <p id="streakInfo"></p>
+                <button class="btn btn-secondary" onclick="closeWordle()">Закрыть</button>
+            </div>
+        </div>
+
+        <!-- Загрузка чека -->
+        <div id="checkModal" class="modal">
+            <div class="modal-content">
+                <h2>Загрузить чек</h2>
+                <select id="checkStore" class="select">
+                    <option value="Пятерочка">Пятерочка</option>
+                    <option value="Магнит">Магнит</option>
+                    <option value="Монетка">Монетка</option>
+                    <option value="Чижик">Чижик</option>
+                </select>
+                <input type="date" id="checkDate" class="input">
+                <input type="file" id="checkPhoto" accept="image/*" capture="environment">
+                <button class="btn btn-primary" onclick="submitCheck()">Отправить</button>
+                <button class="btn btn-secondary" onclick="closeCheck()">Закрыть</button>
+            </div>
+        </div>
+
+        <!-- Ссылки -->
+        <div id="linksModal" class="modal">
+            <div class="modal-content">
+                <h2>Ваша ссылка</h2>
+                <p class="link" id="userLink"></p>
+                <button class="btn" onclick="copyLink()">Копировать</button>
+                <p><strong>Переходы:</strong> <span id="linkClicks"></span></p>
+                <p><strong>Заработано:</strong> <span id="linkEarned"></span> ₽</p>
+                <p class="hint">Распространяй ссылку везде!</p>
+                <button class="btn btn-secondary" onclick="closeLinks()">Закрыть</button>
+            </div>
+        </div>
+
+        <!-- История -->
+        <div id="historyModal" class="modal">
+            <div class="modal-content">
+                <h2>История</h2>
+                <div id="historyList"></div>
+                <button class="btn btn-secondary" onclick="closeHistory()">Закрыть</button>
+            </div>
+        </div>
+
+        <!-- Админка -->
+        <div id="adminModal" class="modal">
+            <div class="modal-content admin-content">
+                <h2>Админ панель</h2>
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="showAdminTab('users')">Пользователи</button>
+                    <button class="tab-btn" onclick="showAdminTab('withdrawals')">Выводы</button>
+                    <button class="tab-btn" onclick="showAdminTab('checks')">Чеки</button>
+                </div>
+                <div id="adminContent"></div>
+                <button class="btn btn-secondary" onclick="closeAdmin()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
