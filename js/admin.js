@@ -1,6 +1,11 @@
 // === АДМИНКА ===
 
 async function showAdmin() {
+    // Проверяем, точно ли админ
+    if (!currentUser.isAdmin) {
+        alert('Доступ запрещен');
+        return;
+    }
     document.getElementById('adminModal').classList.add('active');
     showAdminTab('users');
 }
@@ -20,12 +25,13 @@ async function showAdminTab(tab) {
             data = await response.json();
             
             if (data.success) {
-                let html = '<table><tr><th>Токен</th><th>Имя</th><th>Баланс</th></tr>';
+                let html = '<table style="width:100%; color:white;"><tr><th>Токен</th><th>Имя</th><th>Баланс</th><th>Админ</th></tr>';
                 data.users.forEach(user => {
                     html += `<tr>
                         <td>${user.token}</td>
                         <td>${user.name}</td>
                         <td>${user.balance} ₽</td>
+                        <td>${user.isAdmin ? '✅' : '❌'}</td>
                     </tr>`;
                 });
                 html += '</table>';
@@ -40,13 +46,14 @@ async function showAdminTab(tab) {
                 data.withdrawals.forEach(w => {
                     html += `
                         <div class="history-item">
-                            ${w.token} - ${w.amount} ₽ на ${w.type}<br>
-                            <button onclick="approveWithdraw(${w.id})">✅ Одобрить</button>
-                            <button onclick="rejectWithdraw(${w.id})">❌ Отклонить</button>
+                            <strong>${w.token}</strong> - ${w.amount} ₽ на ${w.type}<br>
+                            <small>${w.date}</small><br>
+                            <button class="btn" onclick="approveWithdraw(${w.id})">✅ Одобрить</button>
+                            <button class="btn" onclick="rejectWithdraw(${w.id})">❌ Отклонить</button>
                         </div>
                     `;
                 });
-                document.getElementById('adminContent').innerHTML = html || 'Нет заявок';
+                document.getElementById('adminContent').innerHTML = html || 'Нет заявок на вывод';
             }
         } else if (tab === 'checks') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetPendingChecks&token=${currentUser.token}`);
@@ -57,16 +64,16 @@ async function showAdminTab(tab) {
                 data.checks.forEach(c => {
                     html += `
                         <div class="history-item">
-                            ${c.token} - ${c.store} (${c.checkDate})<br>
-                            <a href="${c.photoUrl}" target="_blank">📸 Фото</a><br>
-                            <input type="number" id="amount_${c.id}" placeholder="Сумма">
-                            <button onclick="approveCheck(${c.id})">✅ Одобрить</button>
-                            <button onclick="rejectCheck(${c.id})">❌ Отклонить</button>
-                            <button onclick="penaltyCheck(${c.id})">⚠️ Штраф</button>
+                            <strong>${c.token}</strong> - ${c.store} (${c.checkDate})<br>
+                            <a href="${c.photoUrl}" target="_blank" style="color:#4CAF50;">📸 Открыть фото</a><br>
+                            <input type="number" id="amount_${c.id}" placeholder="Сумма" class="input" style="margin:5px 0;">
+                            <button class="btn" onclick="approveCheck(${c.id})">✅ Одобрить</button>
+                            <button class="btn" onclick="rejectCheck(${c.id})">❌ Отклонить</button>
+                            <button class="btn" onclick="penaltyCheck(${c.id})">⚠️ Штраф</button>
                         </div>
                     `;
                 });
-                document.getElementById('adminContent').innerHTML = html || 'Нет чеков';
+                document.getElementById('adminContent').innerHTML = html || 'Нет чеков на проверку';
             }
         }
     } catch(e) {
