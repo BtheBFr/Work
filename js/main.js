@@ -52,16 +52,25 @@ function loadFromCache() {
     if (saved) {
         try {
             currentUser = JSON.parse(saved);
-            console.log('Загружено из кеша:', currentUser); // Отладка
+            console.log('Загружено из кеша:', currentUser);
+            
+            // Преобразуем isAdmin в булево
+            if (currentUser.isAdmin === 'TRUE' || currentUser.isAdmin === true) {
+                currentUser.isAdmin = true;
+            } else {
+                currentUser.isAdmin = false;
+            }
+            
             document.getElementById('authModal').classList.remove('active');
             document.getElementById('mainSite').style.display = 'block';
-            updateUI();
             
             // Проверяем админа
-            if (currentUser.isAdmin === true || currentUser.isAdmin === 'TRUE') {
+            if (currentUser.isAdmin) {
                 document.getElementById('adminBtn').style.display = 'block';
                 console.log('Админ кнопка показана (из кеша)');
             }
+            
+            updateUI();
         } catch(e) {
             console.error('Ошибка загрузки кеша:', e);
         }
@@ -82,10 +91,17 @@ window.logout = function() {
         document.getElementById('mainSite').style.display = 'none';
         document.getElementById('authModal').classList.add('active');
         document.getElementById('adminBtn').style.display = 'none';
+        
         // Сброс форм
         document.getElementById('registerForm').style.display = 'none';
         document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('requisitesForm').style.display = 'none';
         document.querySelector('.auth-buttons').style.display = 'block';
+        document.getElementById('regToken').value = '';
+        document.getElementById('loginToken').value = '';
+        document.getElementById('phone').value = '';
+        document.getElementById('card').value = '';
+        document.getElementById('steam').value = '';
     }
 }
 
@@ -97,16 +113,22 @@ function updateUI() {
             showLoader();
             const response = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
             const data = await response.json();
-            console.log('Обновление данных:', data); // Отладка
+            console.log('Обновление данных:', data);
             
             if (data.success) {
+                // Преобразуем isAdmin в булево
+                data.isAdmin = data.isAdmin === 'TRUE' || data.isAdmin === true;
+                
                 currentUser = { ...currentUser, ...data };
                 saveToCache();
                 
-                // Проверяем админа снова
-                if (currentUser.isAdmin === true || currentUser.isAdmin === 'TRUE') {
+                // Проверяем админа
+                if (currentUser.isAdmin) {
                     document.getElementById('adminBtn').style.display = 'block';
                     console.log('Админ кнопка показана (обновление)');
+                } else {
+                    document.getElementById('adminBtn').style.display = 'none';
+                    console.log('Не админ:', currentUser.isAdmin);
                 }
             }
         } catch(e) {
@@ -121,3 +143,8 @@ function updateUI() {
 window.openAd = function() {
     window.open('https://bthebfr.github.io/btheb-about/', '_blank');
 }
+
+// Делаем функции глобальными
+window.showLoader = showLoader;
+window.hideLoader = hideLoader;
+window.updateUI = updateUI;
