@@ -87,6 +87,7 @@ async function loginUser(token) {
             document.getElementById('mainSite').style.display = 'block';
             updateUI();
             
+            // Админка показывается если в таблице TRUE
             if (data.isAdmin) {
                 document.getElementById('adminBtn').style.display = 'block';
             }
