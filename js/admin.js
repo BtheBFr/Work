@@ -11,7 +11,11 @@ window.showAdmin = async function() {
         return;
     }
     
-    if (currentUser.isAdmin !== true && currentUser.isAdmin !== 'TRUE') {
+    // Проверяем isAdmin (может быть true или 'TRUE')
+    const isAdmin = currentUser.isAdmin === true || currentUser.isAdmin === 'TRUE';
+    console.log('isAdmin check:', isAdmin);
+    
+    if (!isAdmin) {
         alert('Доступ запрещен');
         return;
     }
@@ -31,8 +35,8 @@ window.showAdminTab = async function(tab) {
     event.target.classList.add('active');
     
     try {
-        let data;
         showLoader();
+        let data;
         
         if (tab === 'users') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetAllUsers&token=${currentUser.token}`);
@@ -64,12 +68,12 @@ window.showAdminTab = async function(tab) {
                         <div class="history-item">
                             <strong>${w.token}</strong> - ${w.amount} ₽ на ${w.type}<br>
                             <small>${w.date}</small><br>
-                            <button class="btn" onclick="approveWithdraw(${w.id})">✅ Одобрить</button>
-                            <button class="btn" onclick="rejectWithdraw(${w.id})">❌ Отклонить</button>
+                            <button class="btn btn-primary" onclick="approveWithdraw(${w.id})" style="width: auto; display: inline-block; margin-right: 5px;">✅ Одобрить</button>
+                            <button class="btn btn-secondary" onclick="rejectWithdraw(${w.id})" style="width: auto; display: inline-block;">❌ Отклонить</button>
                         </div>
                     `;
                 });
-                document.getElementById('adminContent').innerHTML = html || 'Нет заявок на вывод';
+                document.getElementById('adminContent').innerHTML = html || '<p style="text-align:center; color:#888;">Нет заявок на вывод</p>';
             }
         } else if (tab === 'checks') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetPendingChecks&token=${currentUser.token}`);
@@ -83,14 +87,14 @@ window.showAdminTab = async function(tab) {
                         <div class="history-item">
                             <strong>${c.token}</strong> - ${c.store} (${c.checkDate})<br>
                             <a href="${c.photoUrl}" target="_blank" style="color:#4CAF50;">📸 Открыть фото</a><br>
-                            <input type="number" id="amount_${c.id}" placeholder="Сумма" class="input" style="margin:5px 0;">
-                            <button class="btn" onclick="approveCheck(${c.id})">✅ Одобрить</button>
-                            <button class="btn" onclick="rejectCheck(${c.id})">❌ Отклонить</button>
-                            <button class="btn" onclick="penaltyCheck(${c.id})">⚠️ Штраф</button>
+                            <input type="number" id="amount_${c.id}" placeholder="Сумма" class="input" style="margin:5px 0; width: 100%;">
+                            <button class="btn btn-primary" onclick="approveCheck(${c.id})" style="width: auto; display: inline-block; margin-right: 5px;">✅ Одобрить</button>
+                            <button class="btn btn-secondary" onclick="rejectCheck(${c.id})" style="width: auto; display: inline-block; margin-right: 5px;">❌ Отклонить</button>
+                            <button class="btn" onclick="penaltyCheck(${c.id})" style="width: auto; display: inline-block; background: #ff9800;">⚠️ Штраф</button>
                         </div>
                     `;
                 });
-                document.getElementById('adminContent').innerHTML = html || 'Нет чеков на проверку';
+                document.getElementById('adminContent').innerHTML = html || '<p style="text-align:center; color:#888;">Нет чеков на проверку</p>';
             }
         }
     } catch(e) {
