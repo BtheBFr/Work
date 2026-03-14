@@ -332,43 +332,62 @@ body {
     text-decoration: none;
 }
 
-/* Кастомный выбор файла */
-.file-input-wrapper {
+/* ===== ИСПРАВЛЕНИЕ ПОЛЕЙ ВВОДА (НЕ БЕЛЫЕ) ===== */
+.input-wrapper {
     position: relative;
-    margin: 15px 0;
+    margin: 20px 0;
 }
 
-.file-input {
-    position: absolute;
-    opacity: 0;
+.input-wrapper input,
+.input-wrapper select,
+.input-wrapper textarea {
     width: 100%;
-    height: 100%;
-    cursor: pointer;
-}
-
-.file-label {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 15px 25px;
-    background: #0f0f0f;
+    padding: 15px 20px;
+    background: #0f0f0f !important; /* ТЕМНЫЙ ФОН */
     border: 2px solid #333;
     border-radius: 50px;
-    color: #888;
-    cursor: pointer;
+    color: white !important;
+    font-size: 16px;
     transition: all 0.3s;
+    -webkit-text-fill-color: white; /* Для Safari */
+    -webkit-box-shadow: 0 0 0px 1000px #0f0f0f inset !important; /* Убирает белый фон автозаполнения */
 }
 
-.file-label:hover {
+.input-wrapper input:-webkit-autofill,
+.input-wrapper input:-webkit-autofill:hover,
+.input-wrapper input:-webkit-autofill:focus,
+.input-wrapper input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0px 1000px #0f0f0f inset !important;
+    -webkit-text-fill-color: white !important;
+    caret-color: white;
+}
+
+.input-wrapper input:focus,
+.input-wrapper select:focus {
+    outline: none;
     border-color: #4CAF50;
-    background: #1a1a1a;
 }
 
-.file-label span {
+.input-wrapper label {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    pointer-events: none;
+    transition: all 0.3s;
+    background: #0f0f0f;
+    padding: 0 5px;
+}
+
+.input-wrapper input:focus ~ label,
+.input-wrapper input:not(:placeholder-shown) ~ label {
+    top: 0;
+    font-size: 12px;
     color: #4CAF50;
 }
 
-/* Стилизованный select */
+/* ===== КАСТОМНЫЙ SELECT (ЗАКРУГЛЕННЫЙ) ===== */
 .custom-select {
     position: relative;
     margin: 15px 0;
@@ -379,7 +398,7 @@ body {
     padding: 15px 25px;
     background: #0f0f0f;
     border: 2px solid #333;
-    border-radius: 50px;
+    border-radius: 50px !important; /* СИЛЬНО ЗАКРУГЛЕННЫЙ */
     color: white;
     font-size: 16px;
     appearance: none;
@@ -404,191 +423,46 @@ body {
     font-size: 12px;
 }
 
-/* Стилизованный input */
-.input-wrapper {
+/* ===== КАСТОМНЫЙ ВЫБОР ФАЙЛА ===== */
+.file-input-wrapper {
     position: relative;
     margin: 15px 0;
 }
 
-.input-wrapper input,
-.input-wrapper select {
+.file-input {
+    position: absolute;
+    opacity: 0;
     width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.file-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 15px 25px;
     background: #0f0f0f;
     border: 2px solid #333;
     border-radius: 50px;
     color: white;
-    font-size: 16px;
-    transition: all 0.3s;
-}
-
-.input-wrapper input:focus,
-.input-wrapper select:focus {
-    outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
-}
-
-.input-wrapper label {
-    position: absolute;
-    left: 25px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #888;
-    pointer-events: none;
-    transition: all 0.3s;
-    background: #0f0f0f;
-    padding: 0 5px;
-}
-
-.input-wrapper input:focus ~ label,
-.input-wrapper input:not(:placeholder-shown) ~ label {
-    top: 0;
-    font-size: 12px;
-    color: #4CAF50;
-}
-
-/* Ссылка */
-.link-container {
-    background: linear-gradient(145deg, #0f0f0f, #1a1a1a);
-    border: 2px solid #333;
-    border-radius: 20px;
-    padding: 20px;
-    margin: 20px 0;
-    text-align: center;
-}
-
-.link {
-    font-family: 'Courier New', monospace;
-    font-size: 18px;
-    color: #4CAF50;
-    word-break: break-all;
-    margin: 15px 0;
-    padding: 15px;
-    background: #0a0a0a;
-    border-radius: 15px;
-    border: 1px solid #333;
-}
-
-.copy-btn {
-    background: linear-gradient(45deg, #333, #444);
-    color: white;
-    border: 2px solid #4CAF50;
-    padding: 12px 30px;
-    border-radius: 50px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.copy-btn:hover {
-    background: #4CAF50;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
-}
-
-.copy-btn i {
-    font-size: 20px;
-}
-
-/* Вывод средств */
-.withdraw-options {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin: 20px 0;
-}
-
-.withdraw-option {
-    background: #0f0f0f;
-    border: 2px solid #333;
-    border-radius: 20px;
-    padding: 20px;
-    text-align: center;
     cursor: pointer;
     transition: all 0.3s;
+    position: relative;
+    z-index: 1;
 }
 
-.withdraw-option:hover,
-.withdraw-option.selected {
+.file-label:hover {
     border-color: #4CAF50;
     background: #1a1a1a;
-    transform: translateY(-2px);
 }
 
-.withdraw-option i {
-    font-size: 32px;
+.file-label span {
     color: #4CAF50;
-    margin-bottom: 10px;
-    display: block;
 }
 
-.withdraw-option span {
-    font-size: 14px;
-    color: #888;
-}
-
-/* Админка */
-.admin-content {
-    max-width: 800px;
-    width: 90%;
-}
-
-.admin-tabs {
-    display: flex;
-    gap: 10px;
-    margin: 20px 0;
-    flex-wrap: wrap;
-}
-
-.tab-btn {
-    padding: 12px 25px;
-    border-radius: 30px;
-    border: 1px solid #333;
-    background: #0f0f0f;
-    color: white;
-    cursor: pointer;
-    flex: 1;
-    font-size: 14px;
-    transition: all 0.3s;
-}
-
-.tab-btn:hover {
-    background: #1a1a1a;
-    border-color: #4CAF50;
-}
-
-.tab-btn.active {
-    background: #4CAF50;
-    border-color: #4CAF50;
-}
-
-.admin-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-}
-
-.admin-table th,
-.admin-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #333;
-}
-
-.admin-table th {
-    color: #4CAF50;
-    font-weight: 600;
-}
-
-.admin-table tr:hover {
-    background: #0f0f0f;
-}
-
-/* Wordle */
+/* ===== WORDLE (ИСПРАВЛЕННАЯ КЛАВИАТУРА) ===== */
 .wordle-grid {
     display: grid;
     grid-template-rows: repeat(6, 1fr);
@@ -646,15 +520,24 @@ body {
     }
 }
 
-.keyboard {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: 5px;
+/* ИСПРАВЛЕННАЯ КЛАВИАТУРА */
+.keyboard-container {
     margin: 20px 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin: 5px 0;
+    flex-wrap: wrap;
 }
 
 .key {
-    aspect-ratio: 1;
+    min-width: 40px;
+    height: 50px;
     background: #0f0f0f;
     border: 1px solid #333;
     border-radius: 10px;
@@ -662,6 +545,8 @@ body {
     font-size: 18px;
     cursor: pointer;
     transition: all 0.1s;
+    flex: 0 1 auto;
+    padding: 0 10px;
 }
 
 .key:hover {
@@ -673,11 +558,59 @@ body {
     transform: scale(0.95);
 }
 
-/* История */
+.key.special {
+    min-width: 70px;
+    background: #4CAF50;
+}
+
+/* ===== ВЫВОД СРЕДСТВ ===== */
+.withdraw-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.withdraw-option {
+    background: #0f0f0f;
+    border: 2px solid #333;
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.withdraw-option:hover,
+.withdraw-option.selected {
+    border-color: #4CAF50;
+    background: #1a1a1a;
+    transform: translateY(-2px);
+}
+
+.withdraw-option i {
+    font-size: 32px;
+    color: #4CAF50;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.withdraw-option span {
+    font-size: 14px;
+    color: #888;
+}
+
+/* ===== ИСТОРИЯ (БЕЗ ПОЛОСЫ ПРОКРУТКИ) ===== */
 .history-list {
     max-height: 400px;
     overflow-y: auto;
     margin: 20px 0;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.history-list::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
 }
 
 .history-item {
@@ -708,7 +641,106 @@ body {
     }
 }
 
-/* Текст */
+/* ===== АДМИНКА ===== */
+.admin-content {
+    max-width: 800px;
+    width: 90%;
+}
+
+.admin-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    padding: 12px 25px;
+    border-radius: 30px;
+    border: 1px solid #333;
+    background: #0f0f0f;
+    color: white;
+    cursor: pointer;
+    flex: 1;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.tab-btn:hover {
+    background: #1a1a1a;
+    border-color: #4CAF50;
+}
+
+.tab-btn.active {
+    background: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #333;
+}
+
+.admin-table th {
+    color: #4CAF50;
+    font-weight: 600;
+}
+
+.admin-table tr:hover {
+    background: #0f0f0f;
+}
+
+/* ===== ССЫЛКА ===== */
+.link-container {
+    background: linear-gradient(145deg, #0f0f0f, #1a1a1a);
+    border: 2px solid #333;
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.link {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    color: #4CAF50;
+    word-break: break-all;
+    margin: 15px 0;
+    padding: 15px;
+    background: #0a0a0a;
+    border-radius: 15px;
+    border: 1px solid #333;
+}
+
+.copy-btn {
+    background: linear-gradient(45deg, #333, #444);
+    color: white;
+    border: 2px solid #4CAF50;
+    padding: 12px 30px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.copy-btn:hover {
+    background: #4CAF50;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
+}
+
+/* ===== ТЕКСТ ===== */
 h2 {
     text-align: center;
     margin-bottom: 10px;
@@ -735,7 +767,7 @@ h2 {
     margin: 5px 0;
 }
 
-/* Адаптация */
+/* ===== АДАПТАЦИЯ ===== */
 @media (max-width: 768px) {
     .btn-big {
         padding: 30px 50px;
@@ -756,12 +788,13 @@ h2 {
         padding: 20px;
     }
     
-    .keyboard {
-        grid-template-columns: repeat(5, 1fr);
-    }
-    
     .withdraw-options {
         grid-template-columns: 1fr;
+    }
+    
+    .key {
+        min-width: 30px;
+        font-size: 16px;
     }
 }
 
@@ -789,5 +822,20 @@ h2 {
     .btn-icon {
         padding: 6px 12px;
         font-size: 11px;
+    }
+    
+    .keyboard-row {
+        gap: 3px;
+    }
+    
+    .key {
+        min-width: 25px;
+        height: 40px;
+        font-size: 14px;
+        padding: 0 5px;
+    }
+    
+    .key.special {
+        min-width: 50px;
     }
 }
