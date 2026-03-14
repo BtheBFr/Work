@@ -4,13 +4,12 @@ function showWithdraw() {
     const modal = document.getElementById('withdrawModal');
     const content = modal.querySelector('.modal-content');
     
-    // Создаем красивый выбор реквизитов
-    let optionsDiv = content.querySelector('.withdraw-options');
-    if (!optionsDiv) {
+    // Создаем красивый выбор реквизитов, если его нет
+    if (!content.querySelector('.withdraw-options')) {
         const select = document.getElementById('withdrawType');
         select.style.display = 'none';
         
-        optionsDiv = document.createElement('div');
+        const optionsDiv = document.createElement('div');
         optionsDiv.className = 'withdraw-options';
         
         const options = [
@@ -22,16 +21,19 @@ function showWithdraw() {
         options.forEach(opt => {
             const option = document.createElement('div');
             option.className = 'withdraw-option';
+            if (opt.value === 'phone') option.classList.add('selected');
             option.innerHTML = `<i>${opt.icon}</i><span>${opt.label}</span>`;
-            option.onclick = () => {
+            option.onclick = function() {
                 document.querySelectorAll('.withdraw-option').forEach(o => o.classList.remove('selected'));
-                option.classList.add('selected');
+                this.classList.add('selected');
                 document.getElementById('withdrawType').value = opt.value;
             };
             optionsDiv.appendChild(option);
         });
         
-        select.insertAdjacentElement('afterend', optionsDiv);
+        // Вставляем после заголовка
+        const title = content.querySelector('h2');
+        title.insertAdjacentElement('afterend', optionsDiv);
     }
     
     modal.classList.add('active');
@@ -71,9 +73,13 @@ async function withdraw() {
         if (data.success) {
             alert('Заявка создана');
             closeWithdraw();
-            const userData = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
-            currentUser = await userData.json();
-            saveToCache();
+            // Обновляем данные пользователя
+            const userResponse = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
+            const userData = await userResponse.json();
+            if (userData.success) {
+                currentUser = { ...currentUser, ...userData };
+                saveToCache();
+            }
         } else {
             alert(data.error);
         }
@@ -83,3 +89,8 @@ async function withdraw() {
         hideLoader();
     }
 }
+
+// Делаем функции глобальными
+window.showWithdraw = showWithdraw;
+window.closeWithdraw = closeWithdraw;
+window.withdraw = withdraw;
