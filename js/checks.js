@@ -1,14 +1,11 @@
 // === ЧЕКИ ===
 
 function uploadCheck() {
-    // Создаем красивый интерфейс для выбора файла
     const modal = document.getElementById('checkModal');
-    const content = modal.querySelector('.modal-content');
     
-    // Обновляем содержимое если нужно
-    const fileWrapper = content.querySelector('.file-input-wrapper');
-    if (!fileWrapper) {
-        const fileInput = document.getElementById('checkPhoto');
+    // Проверяем, создан ли красивый выбор файла
+    const fileInput = document.getElementById('checkPhoto');
+    if (!document.querySelector('.file-input-wrapper')) {
         fileInput.style.display = 'none';
         
         const wrapper = document.createElement('div');
@@ -21,13 +18,29 @@ function uploadCheck() {
             <span id="fileName">Файл не выбран</span>
         `;
         
-        fileInput.parentNode.insertBefore(wrapper, fileInput);
-        wrapper.appendChild(fileInput);
+        // Создаем кнопку выбора файла
+        const fileButton = document.createElement('input');
+        fileButton.type = 'file';
+        fileButton.className = 'file-input';
+        fileButton.accept = 'image/*';
+        fileButton.capture = 'environment';
+        
+        fileButton.addEventListener('change', function() {
+            document.getElementById('fileName').textContent = this.files[0] ? this.files[0].name : 'Файл не выбран';
+            // Копируем файл в оригинальный input
+            if (this.files[0]) {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(this.files[0]);
+                fileInput.files = dataTransfer.files;
+            }
+        });
+        
+        wrapper.appendChild(fileButton);
         wrapper.appendChild(label);
         
-        fileInput.addEventListener('change', function() {
-            document.getElementById('fileName').textContent = this.files[0] ? this.files[0].name : 'Файл не выбран';
-        });
+        // Вставляем после select
+        const selectWrapper = document.querySelector('.custom-select');
+        selectWrapper.insertAdjacentElement('afterend', wrapper);
     }
     
     modal.classList.add('active');
@@ -86,3 +99,8 @@ async function submitCheck() {
     
     reader.readAsDataURL(file);
 }
+
+// Делаем функции глобальными
+window.uploadCheck = uploadCheck;
+window.closeCheck = closeCheck;
+window.submitCheck = submitCheck;
