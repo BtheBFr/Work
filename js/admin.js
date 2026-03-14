@@ -11,7 +11,7 @@ window.showAdmin = async function() {
         return;
     }
     
-    // Проверяем isAdmin (может быть true или 'TRUE')
+    // Проверяем isAdmin
     const isAdmin = currentUser.isAdmin === true || currentUser.isAdmin === 'TRUE';
     console.log('isAdmin check:', isAdmin);
     
