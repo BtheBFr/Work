@@ -30,6 +30,7 @@ async function updateRequisites() {
         steam: document.getElementById('profileSteam').value
     };
 
+    showLoader(); // ПОКАЗЫВАЕМ ЗАГРУЗКУ
     try {
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
@@ -49,5 +50,12 @@ async function updateRequisites() {
         }
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader(); // СКРЫВАЕМ ЗАГРУЗКУ
     }
 }
+
+window.showProfile = showProfile;
+window.showToken = showToken;
+window.closeProfile = closeProfile;
+window.updateRequisites = updateRequisites;
