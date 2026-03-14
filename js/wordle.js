@@ -66,7 +66,6 @@ function renderWordle() {
                 letter = attempt[j] || '';
                 
                 if (letter) {
-                    // Правильное сравнение букв
                     if (wordleState.word[j] === letter) {
                         cellClass += ' correct';
                     } else if (wordleState.word.includes(letter)) {
@@ -89,28 +88,29 @@ function renderWordle() {
     renderKeyboard();
 }
 
+// ПРОСТАЯ КЛАВИАТУРА КАК ТЫ ХОТЕЛ
 function renderKeyboard() {
-    // Исправленная клавиатура с рядами
-    const keys = [
-        ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з', 'х', 'ъ'],
+    const rows = [
+        ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з'],
         ['ф', 'ы', 'в', 'а', 'п', 'р', 'о', 'л', 'д', 'ж', 'э'],
         ['я', 'ч', 'с', 'м', 'и', 'т', 'ь', 'б', 'ю']
     ];
     
     let html = '<div class="keyboard-container">';
     
-    keys.forEach(row => {
+    rows.forEach((row, index) => {
         html += '<div class="keyboard-row">';
         row.forEach(key => {
             html += `<button class="key" onclick="typeLetter('${key}')">${key}</button>`;
         });
+        if (index === 2) {
+            html += `<button class="key special" onclick="deleteLetter()">⌫</button>`;
+        }
         html += '</div>';
     });
     
-    // Ряд с удалением и вводом
     html += '<div class="keyboard-row">';
-    html += `<button class="key special" onclick="deleteLetter()">⌫</button>`;
-    html += `<button class="key special" onclick="submitWord()">⏎</button>`;
+    html += `<button class="key special" onclick="submitWord()" style="min-width: 120px;">⏎ Ввод</button>`;
     html += '</div>';
     
     html += '</div>';
@@ -120,21 +120,15 @@ function renderKeyboard() {
 
 // Обработка физической клавиатуры
 document.addEventListener('keydown', function(e) {
-    // Проверяем, открыто ли модальное окно Wordle
     if (!document.getElementById('wordleModal').classList.contains('active')) return;
     
     const key = e.key.toLowerCase();
     
-    // Русские буквы
     if (/^[а-я]$/.test(key)) {
         typeLetter(key);
-    }
-    // Backspace
-    else if (e.key === 'Backspace') {
+    } else if (e.key === 'Backspace') {
         deleteLetter();
-    }
-    // Enter
-    else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter') {
         submitWord();
     }
 });
@@ -168,11 +162,9 @@ async function submitWord() {
     const word = wordleState.currentAttempt.join('');
     wordleState.attempts.push(word);
     
-    // Сохраняем в кеш
     localStorage.setItem(`wordle_${currentUser.token}_${new Date().toDateString()}`, JSON.stringify(wordleState));
     
     if (word === wordleState.word) {
-        // Победа
         showLoader();
         try {
             const response = await fetch(SCRIPT_URL, {
@@ -198,7 +190,6 @@ async function submitWord() {
             hideLoader();
         }
     } else if (wordleState.attempts.length === 6) {
-        // Поражение
         showLoader();
         try {
             await fetch(SCRIPT_URL, {
@@ -228,7 +219,6 @@ function closeWordle() {
     document.getElementById('wordleModal').classList.remove('active');
 }
 
-// Делаем функции глобальными
 window.playWordle = playWordle;
 window.typeLetter = typeLetter;
 window.deleteLetter = deleteLetter;
