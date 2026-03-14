@@ -1,31 +1,46 @@
 // === АДМИНКА ===
 
-async function showAdmin() {
+// Делаем функции глобальными
+window.showAdmin = async function() {
+    console.log('showAdmin called');
+    console.log('Current user:', currentUser);
+    
     // Проверяем, точно ли админ
-    if (!currentUser.isAdmin) {
+    if (!currentUser) {
+        alert('Сначала войдите в аккаунт');
+        return;
+    }
+    
+    if (currentUser.isAdmin !== true && currentUser.isAdmin !== 'TRUE') {
         alert('Доступ запрещен');
         return;
     }
+    
     document.getElementById('adminModal').classList.add('active');
-    showAdminTab('users');
+    window.showAdminTab('users');
 }
 
-function closeAdmin() {
+window.closeAdmin = function() {
     document.getElementById('adminModal').classList.remove('active');
 }
 
-async function showAdminTab(tab) {
+window.showAdminTab = async function(tab) {
+    // Убираем активный класс у всех кнопок
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    // Добавляем активный класс нажатой кнопке
     event.target.classList.add('active');
     
     try {
         let data;
+        showLoader();
+        
         if (tab === 'users') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetAllUsers&token=${currentUser.token}`);
             data = await response.json();
+            console.log('adminGetAllUsers:', data);
             
             if (data.success) {
-                let html = '<table style="width:100%; color:white;"><tr><th>Токен</th><th>Имя</th><th>Баланс</th><th>Админ</th></tr>';
+                let html = '<table class="admin-table"><tr><th>Токен</th><th>Имя</th><th>Баланс</th><th>Админ</th></tr>';
                 data.users.forEach(user => {
                     html += `<tr>
                         <td>${user.token}</td>
@@ -40,6 +55,7 @@ async function showAdminTab(tab) {
         } else if (tab === 'withdrawals') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetPendingWithdrawals&token=${currentUser.token}`);
             data = await response.json();
+            console.log('adminGetPendingWithdrawals:', data);
             
             if (data.success) {
                 let html = '';
@@ -58,6 +74,7 @@ async function showAdminTab(tab) {
         } else if (tab === 'checks') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetPendingChecks&token=${currentUser.token}`);
             data = await response.json();
+            console.log('adminGetPendingChecks:', data);
             
             if (data.success) {
                 let html = '';
@@ -78,13 +95,18 @@ async function showAdminTab(tab) {
         }
     } catch(e) {
         alert('Ошибка: ' + e);
+        console.error(e);
+    } finally {
+        hideLoader();
     }
 }
 
-async function approveWithdraw(id) {
+// Функции для действий админа
+window.approveWithdraw = async function(id) {
     if (!confirm('Одобрить вывод?')) return;
     
     try {
+        showLoader();
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -96,16 +118,19 @@ async function approveWithdraw(id) {
         
         const data = await response.json();
         alert(data.message);
-        showAdminTab('withdrawals');
+        window.showAdminTab('withdrawals');
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader();
     }
 }
 
-async function rejectWithdraw(id) {
+window.rejectWithdraw = async function(id) {
     if (!confirm('Отклонить вывод?')) return;
     
     try {
+        showLoader();
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -117,13 +142,15 @@ async function rejectWithdraw(id) {
         
         const data = await response.json();
         alert(data.message);
-        showAdminTab('withdrawals');
+        window.showAdminTab('withdrawals');
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader();
     }
 }
 
-async function approveCheck(id) {
+window.approveCheck = async function(id) {
     const amount = document.getElementById(`amount_${id}`).value;
     if (!amount) {
         alert('Введите сумму');
@@ -131,6 +158,7 @@ async function approveCheck(id) {
     }
     
     try {
+        showLoader();
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -143,17 +171,20 @@ async function approveCheck(id) {
         
         const data = await response.json();
         alert(data.message);
-        showAdminTab('checks');
+        window.showAdminTab('checks');
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader();
     }
 }
 
-async function rejectCheck(id) {
+window.rejectCheck = async function(id) {
     const reason = prompt('Причина отклонения:');
     if (!reason) return;
     
     try {
+        showLoader();
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -166,16 +197,19 @@ async function rejectCheck(id) {
         
         const data = await response.json();
         alert(data.message);
-        showAdminTab('checks');
+        window.showAdminTab('checks');
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader();
     }
 }
 
-async function penaltyCheck(id) {
+window.penaltyCheck = async function(id) {
     if (!confirm('Выписать штраф 0.15 ₽?')) return;
     
     try {
+        showLoader();
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({
@@ -187,8 +221,10 @@ async function penaltyCheck(id) {
         
         const data = await response.json();
         alert(data.message);
-        showAdminTab('checks');
+        window.showAdminTab('checks');
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader();
     }
 }
