@@ -90,27 +90,54 @@ function renderWordle() {
 }
 
 function renderKeyboard() {
+    // Исправленная клавиатура с рядами
     const keys = [
         ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з', 'х', 'ъ'],
         ['ф', 'ы', 'в', 'а', 'п', 'р', 'о', 'л', 'д', 'ж', 'э'],
         ['я', 'ч', 'с', 'м', 'и', 'т', 'ь', 'б', 'ю']
     ];
     
-    let html = '';
+    let html = '<div class="keyboard-container">';
+    
     keys.forEach(row => {
-        html += '<div style="display: flex; gap: 5px; justify-content: center; margin: 5px 0;">';
+        html += '<div class="keyboard-row">';
         row.forEach(key => {
             html += `<button class="key" onclick="typeLetter('${key}')">${key}</button>`;
         });
         html += '</div>';
     });
-    html += '<div style="display: flex; gap: 5px; justify-content: center; margin: 5px 0;">';
-    html += `<button class="key" style="flex: 2;" onclick="deleteLetter()">⌫ Удалить</button>`;
-    html += `<button class="key" style="flex: 2;" onclick="submitWord()">⏎ Ввод</button>`;
+    
+    // Ряд с удалением и вводом
+    html += '<div class="keyboard-row">';
+    html += `<button class="key special" onclick="deleteLetter()">⌫</button>`;
+    html += `<button class="key special" onclick="submitWord()">⏎</button>`;
+    html += '</div>';
+    
     html += '</div>';
     
     document.getElementById('wordleKeyboard').innerHTML = html;
 }
+
+// Обработка физической клавиатуры
+document.addEventListener('keydown', function(e) {
+    // Проверяем, открыто ли модальное окно Wordle
+    if (!document.getElementById('wordleModal').classList.contains('active')) return;
+    
+    const key = e.key.toLowerCase();
+    
+    // Русские буквы
+    if (/^[а-я]$/.test(key)) {
+        typeLetter(key);
+    }
+    // Backspace
+    else if (e.key === 'Backspace') {
+        deleteLetter();
+    }
+    // Enter
+    else if (e.key === 'Enter') {
+        submitWord();
+    }
+});
 
 function typeLetter(letter) {
     if (wordleState.currentRow >= 6) return;
@@ -200,3 +227,10 @@ async function submitWord() {
 function closeWordle() {
     document.getElementById('wordleModal').classList.remove('active');
 }
+
+// Делаем функции глобальными
+window.playWordle = playWordle;
+window.typeLetter = typeLetter;
+window.deleteLetter = deleteLetter;
+window.submitWord = submitWord;
+window.closeWordle = closeWordle;
