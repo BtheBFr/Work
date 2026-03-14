@@ -5,19 +5,39 @@ let wordleState = {
     attempts: [],
     currentRow: 0,
     currentCol: 0,
-    streak: 0
+    streak: 0,
+    gameId: null
 };
 
 async function playWordle() {
+    showLoader();
     try {
+        // Проверяем, есть ли сохраненная игра в кеше
+        const savedGame = localStorage.getItem(`wordle_${currentUser.token}_${new Date().toDateString()}`);
+        
+        if (savedGame) {
+            wordleState = JSON.parse(savedGame);
+            renderWordle();
+            document.getElementById('wordleModal').classList.add('active');
+            hideLoader();
+            return;
+        }
+
         const response = await fetch(`${SCRIPT_URL}?action=getWordle&token=${currentUser.token}`);
         const data = await response.json();
         
         if (data.success) {
-            wordleState.word = data.word;
-            wordleState.attempts = data.attempts || [];
-            wordleState.currentRow = wordleState.attempts.length;
-            wordleState.currentCol = 0;
+            wordleState = {
+                word: data.word,
+                attempts: data.attempts || [],
+                currentRow: data.attempts ? data.attempts.length : 0,
+                currentCol: 0,
+                streak: data.streak || 0,
+                gameId: data.gameId
+            };
+            
+            // Сохраняем в кеш
+            localStorage.setItem(`wordle_${currentUser.token}_${new Date().toDateString()}`, JSON.stringify(wordleState));
             
             renderWordle();
             document.getElementById('wordleModal').classList.add('active');
@@ -26,6 +46,8 @@ async function playWordle() {
         }
     } catch(e) {
         alert('Ошибка: ' + e);
+    } finally {
+        hideLoader();
     }
 }
 
@@ -44,6 +66,7 @@ function renderWordle() {
                 letter = attempt[j] || '';
                 
                 if (letter) {
+                    // Правильное сравнение букв
                     if (wordleState.word[j] === letter) {
                         cellClass += ' correct';
                     } else if (wordleState.word.includes(letter)) {
@@ -52,8 +75,8 @@ function renderWordle() {
                         cellClass += ' absent';
                     }
                 }
-            } else if (i === wordleState.currentRow && j < wordleState.currentCol) {
-                letter = wordleState.currentAttempt?.[j] || '';
+            } else if (i === wordleState.currentRow && wordleState.currentAttempt && j < wordleState.currentAttempt.length) {
+                letter = wordleState.currentAttempt[j];
             }
             
             html += `<div class="${cellClass}">${letter}</div>`;
@@ -67,43 +90,64 @@ function renderWordle() {
 }
 
 function renderKeyboard() {
-    const keys = 'йцукенгшщзхъфывапролджэячсмитьбю';
-    let html = '';
+    const keys = [
+        ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з', 'х', 'ъ'],
+        ['ф', 'ы', 'в', 'а', 'п', 'р', 'о', 'л', 'д', 'ж', 'э'],
+        ['я', 'ч', 'с', 'м', 'и', 'т', 'ь', 'б', 'ю']
+    ];
     
-    for (let key of keys) {
-        html += `<button class="key" onclick="typeLetter('${key}')">${key}</button>`;
-    }
-    html += `<button class="key" onclick="deleteLetter()">⌫</button>`;
-    html += `<button class="key" onclick="submitWord()">⏎</button>`;
+    let html = '';
+    keys.forEach(row => {
+        html += '<div style="display: flex; gap: 5px; justify-content: center; margin: 5px 0;">';
+        row.forEach(key => {
+            html += `<button class="key" onclick="typeLetter('${key}')">${key}</button>`;
+        });
+        html += '</div>';
+    });
+    html += '<div style="display: flex; gap: 5px; justify-content: center; margin: 5px 0;">';
+    html += `<button class="key" style="flex: 2;" onclick="deleteLetter()">⌫ Удалить</button>`;
+    html += `<button class="key" style="flex: 2;" onclick="submitWord()">⏎ Ввод</button>`;
+    html += '</div>';
     
     document.getElementById('wordleKeyboard').innerHTML = html;
 }
 
 function typeLetter(letter) {
-    if (wordleState.currentCol < 5 && wordleState.currentRow < 6) {
-        if (!wordleState.currentAttempt) {
-            wordleState.currentAttempt = [];
-        }
-        wordleState.currentAttempt[wordleState.currentCol] = letter;
-        wordleState.currentCol++;
+    if (wordleState.currentRow >= 6) return;
+    
+    if (!wordleState.currentAttempt) {
+        wordleState.currentAttempt = [];
+    }
+    
+    if (wordleState.currentAttempt.length < 5) {
+        wordleState.currentAttempt.push(letter);
         renderWordle();
     }
 }
 
 function deleteLetter() {
-    if (wordleState.currentCol > 0) {
-        wordleState.currentCol--;
-        delete wordleState.currentAttempt[wordleState.currentCol];
+    if (wordleState.currentAttempt && wordleState.currentAttempt.length > 0) {
+        wordleState.currentAttempt.pop();
         renderWordle();
     }
 }
 
 async function submitWord() {
-    if (wordleState.currentCol === 5) {
-        const word = wordleState.currentAttempt.join('');
-        wordleState.attempts.push(word);
-        
-        if (word === wordleState.word) {
+    if (!wordleState.currentAttempt || wordleState.currentAttempt.length !== 5) {
+        alert('Введите слово из 5 букв');
+        return;
+    }
+    
+    const word = wordleState.currentAttempt.join('');
+    wordleState.attempts.push(word);
+    
+    // Сохраняем в кеш
+    localStorage.setItem(`wordle_${currentUser.token}_${new Date().toDateString()}`, JSON.stringify(wordleState));
+    
+    if (word === wordleState.word) {
+        // Победа
+        showLoader();
+        try {
             const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -118,9 +162,18 @@ async function submitWord() {
                 alert(data.message);
                 currentUser.balance = (currentUser.balance || 0) + data.reward;
                 saveToCache();
+                localStorage.removeItem(`wordle_${currentUser.token}_${new Date().toDateString()}`);
                 closeWordle();
             }
-        } else if (wordleState.attempts.length === 6) {
+        } catch(e) {
+            alert('Ошибка: ' + e);
+        } finally {
+            hideLoader();
+        }
+    } else if (wordleState.attempts.length === 6) {
+        // Поражение
+        showLoader();
+        try {
             await fetch(SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify({
@@ -130,13 +183,17 @@ async function submitWord() {
                 })
             });
             alert('Не угадали! Попробуйте завтра');
+            localStorage.removeItem(`wordle_${currentUser.token}_${new Date().toDateString()}`);
             closeWordle();
-        } else {
-            wordleState.currentRow++;
-            wordleState.currentCol = 0;
-            wordleState.currentAttempt = [];
-            renderWordle();
+        } catch(e) {
+            alert('Ошибка: ' + e);
+        } finally {
+            hideLoader();
         }
+    } else {
+        wordleState.currentRow++;
+        wordleState.currentAttempt = [];
+        renderWordle();
     }
 }
 
