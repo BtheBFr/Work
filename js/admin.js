@@ -9,10 +9,7 @@ window.showAdmin = async function() {
         return;
     }
     
-    const isAdmin = currentUser.isAdmin === true || currentUser.isAdmin === 'TRUE';
-    console.log('isAdmin check:', isAdmin);
-    
-    if (!isAdmin) {
+    if (!currentUser.isAdmin) {
         alert('Доступ запрещен');
         return;
     }
@@ -36,7 +33,6 @@ window.showAdminTab = async function(tab) {
         if (tab === 'users') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetAllUsers&token=${currentUser.token}`);
             data = await response.json();
-            console.log('adminGetAllUsers:', data);
             
             if (data.success) {
                 let html = '<table class="admin-table"><tr><th>Токен</th><th>Имя</th><th>Баланс</th><th>Админ</th></tr>';
@@ -55,7 +51,6 @@ window.showAdminTab = async function(tab) {
         } else if (tab === 'withdrawals') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetPendingWithdrawals&token=${currentUser.token}`);
             data = await response.json();
-            console.log('adminGetPendingWithdrawals:', data);
             
             if (data.success) {
                 let html = '<div class="admin-list">';
@@ -65,9 +60,15 @@ window.showAdminTab = async function(tab) {
                     data.withdrawals.forEach(w => {
                         const date = new Date(w.date);
                         const formattedDate = date.toLocaleString('ru-RU');
+                        
+                        let typeText = w.type;
+                        if (w.type === 'phone') typeText = 'телефон';
+                        if (w.type === 'card') typeText = 'карта';
+                        if (w.type === 'steam') typeText = 'Steam';
+                        
                         html += `
                             <div class="history-item" id="withdraw-${w.id}">
-                                <strong>${w.token}</strong> - ${w.amount} ₽ на ${w.type}<br>
+                                <strong>${w.token}</strong> - ${w.amount} ₽ на ${typeText}<br>
                                 <small class="date">${formattedDate}</small><br>
                                 <small>Реквизит: ${w.requisit}</small><br>
                                 <button class="btn btn-primary" onclick="approveWithdraw(${w.id})" style="width: auto; display: inline-block; margin-right: 5px;">✅ Одобрить</button>
@@ -82,7 +83,6 @@ window.showAdminTab = async function(tab) {
         } else if (tab === 'checks') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetPendingChecks&token=${currentUser.token}`);
             data = await response.json();
-            console.log('adminGetPendingChecks:', data);
             
             if (data.success) {
                 let html = '<div class="admin-list">';
@@ -95,7 +95,7 @@ window.showAdminTab = async function(tab) {
                         html += `
                             <div class="history-item" id="check-${c.id}">
                                 <strong>${c.token}</strong> - ${c.store} (${formattedDate})<br>
-                                <a href="${c.photoUrl}" target="_blank" style="color:#4CAF50;">📸 Открыть фото</a><br>
+                                <a href="${c.photoUrl}" target="_blank" style="color:#4CAF50; text-decoration: none;">📸 Открыть фото</a><br>
                                 <div class="input-wrapper" style="margin:10px 0;">
                                     <input type="number" id="amount_${c.id}" placeholder=" " value="0">
                                     <label>Сумма</label>
@@ -136,11 +136,9 @@ window.approveWithdraw = async function(id) {
         const data = await response.json();
         if (data.success) {
             alert('✅ Вывод одобрен');
-            // Удаляем элемент из DOM без перезагрузки
             const element = document.getElementById(`withdraw-${id}`);
             if (element) element.remove();
             
-            // Если список пуст, показываем сообщение
             const container = document.querySelector('.admin-list');
             if (container && container.children.length === 0) {
                 container.innerHTML = '<p style="text-align:center; color:#888;">Нет заявок на вывод</p>';
