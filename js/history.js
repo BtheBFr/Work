@@ -12,8 +12,10 @@ async function showHistory() {
             if (data.history.length === 0) {
                 html += '<p style="text-align:center; color:#888;">История пуста</p>';
             } else {
-                // Переворачиваем массив, чтобы новые были сверху
-                const history = data.history.reverse();
+                // Сортируем по дате (новые сверху)
+                const history = data.history.sort((a, b) => {
+                    return new Date(b.date) - new Date(a.date);
+                });
                 
                 history.forEach(item => {
                     let typeClass = '';
@@ -22,9 +24,11 @@ async function showHistory() {
                     if (item.type === 'wordle') {
                         typeText = '🎮 Wordle';
                     } else if (item.type === 'check') {
-                        typeText = '🧾 Чек';
+                        typeText = '🧾 Чек отправлен';
                     } else if (item.type === 'check_approved') {
                         typeText = '✅ Чек одобрен';
+                    } else if (item.type === 'check_rejected') {
+                        typeText = '❌ Чек отклонен';
                     } else if (item.type === 'withdraw') {
                         typeText = '💸 Заявка на вывод';
                         typeClass = 'withdraw';
@@ -35,18 +39,31 @@ async function showHistory() {
                     } else if (item.type === 'penalty') {
                         typeText = '⚠️ Штраф';
                         typeClass = 'penalty';
+                    } else if (item.type === 'register') {
+                        typeText = '📝 Регистрация';
                     } else {
                         typeText = item.type;
                     }
                     
-                    // Форматируем дату
                     let formattedDate = item.date;
-                    if (item.date && item.date.includes('T')) {
+                    if (item.date) {
                         const date = new Date(item.date);
-                        formattedDate = date.toLocaleString('ru-RU');
+                        if (!isNaN(date)) {
+                            formattedDate = date.toLocaleString('ru-RU', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        }
                     }
                     
-                    const amountClass = item.amount > 0 ? 'positive' : 'negative';
+                    let details = item.details || '';
+                    details = details.replace(/phone/g, 'телефон');
+                    details = details.replace(/card/g, 'карту');
+                    details = details.replace(/steam/g, 'Steam');
+                    
                     const amountColor = item.amount > 0 ? '#4CAF50' : '#f44336';
                     
                     html += `
@@ -56,7 +73,7 @@ async function showHistory() {
                                 <strong style="color: ${amountColor}">${item.amount} ₽</strong>
                             </div>
                             <div class="date">${formattedDate}</div>
-                            ${item.details ? `<small style="color: #888;">${item.details}</small>` : ''}
+                            ${details ? `<small style="color: #888;">${details}</small>` : ''}
                         </div>
                     `;
                 });
@@ -66,7 +83,6 @@ async function showHistory() {
             document.getElementById('historyList').innerHTML = html;
             document.getElementById('historyModal').classList.add('active');
             
-            // Скроллим вверх
             const historyList = document.querySelector('.history-list');
             if (historyList) {
                 historyList.scrollTop = 0;
