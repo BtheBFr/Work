@@ -43,21 +43,29 @@ async function updateRequisites() {
         
         const data = await response.json();
         if (data.success) {
+            // Сразу обновляем локальные данные
             currentUser.phone = requisites.phone;
             currentUser.card = requisites.card;
             currentUser.steam = requisites.steam;
             saveToCache();
+            
             alert('✅ Реквизиты обновлены');
             closeProfile();
             
-            // Обновляем данные с сервера
-            const userResponse = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
-            const userData = await userResponse.json();
-            if (userData.success) {
-                userData.isAdmin = userData.isAdmin === 'TRUE' || userData.isAdmin === true;
-                currentUser = { ...currentUser, ...userData };
-                saveToCache();
-            }
+            // НЕ перезагружаем данные с сервера сразу,
+            // чтобы не затереть только что измененные реквизиты
+            setTimeout(async () => {
+                const userResponse = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
+                const userData = await userResponse.json();
+                if (userData.success) {
+                    // Сохраняем изменения реквизитов
+                    userData.phone = requisites.phone;
+                    userData.card = requisites.card;
+                    userData.steam = requisites.steam;
+                    currentUser = { ...currentUser, ...userData };
+                    saveToCache();
+                }
+            }, 2000);
         } else {
             alert('❌ ' + (data.error || 'Ошибка обновления'));
         }
