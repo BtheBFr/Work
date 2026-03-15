@@ -49,6 +49,15 @@ async function updateRequisites() {
             saveToCache();
             alert('✅ Реквизиты обновлены');
             closeProfile();
+            
+            // Обновляем данные с сервера
+            const userResponse = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
+            const userData = await userResponse.json();
+            if (userData.success) {
+                userData.isAdmin = userData.isAdmin === 'TRUE' || userData.isAdmin === true;
+                currentUser = { ...currentUser, ...userData };
+                saveToCache();
+            }
         } else {
             alert('❌ ' + (data.error || 'Ошибка обновления'));
         }
