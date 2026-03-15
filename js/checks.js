@@ -3,7 +3,6 @@
 function uploadCheck() {
     const modal = document.getElementById('checkModal');
     
-    // Создаем красивый выбор магазина, если его нет
     if (!document.querySelector('.store-selector')) {
         const select = document.getElementById('checkStore');
         select.style.display = 'none';
@@ -22,12 +21,10 @@ function uploadCheck() {
         select.insertAdjacentElement('beforebegin', selector);
     }
     
-    // Создаем красивый выбор даты
     const dateInput = document.getElementById('checkDate');
     dateInput.type = 'date';
     dateInput.className = 'date-picker';
     
-    // Создаем красивый выбор файла, если его нет
     if (!document.querySelector('.file-input-wrapper')) {
         const fileInput = document.getElementById('checkPhoto');
         fileInput.style.display = 'none';
@@ -69,7 +66,6 @@ function uploadCheck() {
     document.getElementById('fileName').textContent = 'Файл не выбран';
     document.getElementById('checkPhoto').value = '';
     
-    // Убираем выделение с магазинов
     document.querySelectorAll('.store-option').forEach(opt => opt.classList.remove('selected'));
     
     modal.classList.add('active');
