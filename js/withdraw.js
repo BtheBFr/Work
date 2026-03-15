@@ -21,7 +21,6 @@ function showWithdraw() {
         options.forEach(opt => {
             const option = document.createElement('div');
             option.className = 'withdraw-option';
-            if (opt.value === 'phone') option.classList.add('selected');
             option.innerHTML = `<i>${opt.icon}</i><span>${opt.label}</span>`;
             option.onclick = function() {
                 document.querySelectorAll('.withdraw-option').forEach(o => o.classList.remove('selected'));
@@ -31,10 +30,13 @@ function showWithdraw() {
             optionsDiv.appendChild(option);
         });
         
-        // Вставляем после заголовка
         const title = content.querySelector('h2');
         title.insertAdjacentElement('afterend', optionsDiv);
     }
+    
+    // Очищаем поля
+    document.getElementById('withdrawAmount').value = '';
+    document.getElementById('secretCode').value = '';
     
     modal.classList.add('active');
 }
@@ -58,6 +60,17 @@ async function withdraw() {
         return;
     }
 
+    // Проверяем, заполнен ли выбранный реквизит
+    let requisitExists = false;
+    if (type === 'phone' && currentUser.phone) requisitExists = true;
+    if (type === 'card' && currentUser.card) requisitExists = true;
+    if (type === 'steam' && currentUser.steam) requisitExists = true;
+
+    if (!requisitExists) {
+        alert('Сначала добавьте этот реквизит в профиле');
+        return;
+    }
+
     showLoader();
     try {
         const response = await fetch(SCRIPT_URL, {
@@ -71,17 +84,19 @@ async function withdraw() {
         
         const data = await response.json();
         if (data.success) {
-            alert('Заявка создана');
+            alert('✅ Заявка на вывод создана');
             closeWithdraw();
+            
             // Обновляем данные пользователя
             const userResponse = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
             const userData = await userResponse.json();
             if (userData.success) {
+                userData.isAdmin = userData.isAdmin === 'TRUE' || userData.isAdmin === true;
                 currentUser = { ...currentUser, ...userData };
                 saveToCache();
             }
         } else {
-            alert(data.error);
+            alert('❌ ' + (data.error || 'Ошибка создания заявки'));
         }
     } catch(e) {
         alert('Ошибка: ' + e);
@@ -90,7 +105,6 @@ async function withdraw() {
     }
 }
 
-// Делаем функции глобальными
 window.showWithdraw = showWithdraw;
 window.closeWithdraw = closeWithdraw;
 window.withdraw = withdraw;
