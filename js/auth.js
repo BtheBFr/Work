@@ -67,8 +67,6 @@ window.loginUser = async function(token) {
         console.log('getUserData ответ:', data);
         
         if (data.success) {
-            data.isAdmin = data.isAdmin === 'TRUE' || data.isAdmin === true;
-            
             currentUser = data;
             saveToCache();
             
@@ -84,7 +82,6 @@ window.loginUser = async function(token) {
                 console.log('Не админ');
             }
             
-            // Предзагружаем Wordle
             if (window.preloadWordle) {
                 setTimeout(() => preloadWordle(), 1000);
             }
@@ -152,7 +149,6 @@ window.saveRequisites = async function() {
     }
 }
 
-// Очищаем поля при открытии
 document.addEventListener('DOMContentLoaded', function() {
     const authModal = document.getElementById('authModal');
     const observer = new MutationObserver(function(mutations) {
