@@ -121,7 +121,7 @@ body {
     100% { transform: rotate(360deg); }
 }
 
-/* Модальные окна */
+/* ===== МОДАЛЬНЫЕ ОКНА ===== */
 .modal {
     display: none;
     position: fixed;
@@ -164,7 +164,7 @@ body {
     }
 }
 
-/* Верхняя панель */
+/* ===== ВЕРХНЯЯ ПАНЕЛЬ ===== */
 .top-panel {
     position: fixed;
     top: 20px;
@@ -206,7 +206,7 @@ body {
     background: #f44336;
 }
 
-/* Центральные кнопки */
+/* ===== ЦЕНТРАЛЬНЫЕ КНОПКИ ===== */
 .center-panel {
     position: absolute;
     top: 50%;
@@ -260,7 +260,7 @@ body {
     left: 100%;
 }
 
-/* Кнопки */
+/* ===== КНОПКИ ===== */
 .btn {
     padding: 15px 30px;
     border-radius: 50px;
@@ -332,7 +332,7 @@ body {
     text-decoration: none;
 }
 
-/* ===== ИСПРАВЛЕНИЕ ПОЛЕЙ ВВОДА (НЕ БЕЛЫЕ) ===== */
+/* ===== ПОЛЯ ВВОДА ===== */
 .input-wrapper {
     position: relative;
     margin: 20px 0;
@@ -343,14 +343,14 @@ body {
 .input-wrapper textarea {
     width: 100%;
     padding: 15px 20px;
-    background: #0f0f0f !important; /* ТЕМНЫЙ ФОН */
+    background: #0f0f0f !important;
     border: 2px solid #333;
     border-radius: 50px;
     color: white !important;
     font-size: 16px;
     transition: all 0.3s;
-    -webkit-text-fill-color: white; /* Для Safari */
-    -webkit-box-shadow: 0 0 0px 1000px #0f0f0f inset !important; /* Убирает белый фон автозаполнения */
+    -webkit-text-fill-color: white;
+    -webkit-box-shadow: 0 0 0px 1000px #0f0f0f inset !important;
 }
 
 .input-wrapper input:-webkit-autofill,
@@ -387,40 +387,57 @@ body {
     color: #4CAF50;
 }
 
-/* ===== КАСТОМНЫЙ SELECT (ЗАКРУГЛЕННЫЙ) ===== */
-.custom-select {
-    position: relative;
-    margin: 15px 0;
+/* ===== КРАСИВЫЙ ВЫБОР МАГАЗИНА ===== */
+.store-selector {
+    margin: 20px 0;
 }
 
-.custom-select select {
-    width: 100%;
-    padding: 15px 25px;
+.store-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.store-option {
     background: #0f0f0f;
     border: 2px solid #333;
-    border-radius: 50px !important; /* СИЛЬНО ЗАКРУГЛЕННЫЙ */
-    color: white;
-    font-size: 16px;
-    appearance: none;
+    border-radius: 20px;
+    padding: 15px;
+    text-align: center;
     cursor: pointer;
     transition: all 0.3s;
+    font-size: 16px;
+    font-weight: 500;
 }
 
-.custom-select select:hover,
-.custom-select select:focus {
+.store-option:hover,
+.store-option.selected {
+    background: #4CAF50;
     border-color: #4CAF50;
-    outline: none;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
 }
 
-.custom-select::after {
-    content: '▼';
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-    color: #4CAF50;
-    pointer-events: none;
-    font-size: 12px;
+/* ===== КРАСИВЫЙ ВЫБОР ДАТЫ ===== */
+.date-picker {
+    margin: 20px 0;
+}
+
+.date-picker input {
+    width: 100%;
+    padding: 15px 20px;
+    background: #0f0f0f;
+    border: 2px solid #333;
+    border-radius: 50px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.date-picker input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+    padding: 5px;
 }
 
 /* ===== КАСТОМНЫЙ ВЫБОР ФАЙЛА ===== */
@@ -462,7 +479,7 @@ body {
     color: #4CAF50;
 }
 
-/* ===== WORDLE (ИСПРАВЛЕННАЯ КЛАВИАТУРА) ===== */
+/* ===== WORDLE ===== */
 .wordle-grid {
     display: grid;
     grid-template-rows: repeat(6, 1fr);
@@ -520,11 +537,8 @@ body {
     }
 }
 
-/* ИСПРАВЛЕННАЯ КЛАВИАТУРА */
 .keyboard-container {
     margin: 20px 0;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
 .keyboard-row {
@@ -539,18 +553,18 @@ body {
     min-width: 40px;
     height: 50px;
     background: #0f0f0f;
-    border: 1px solid #333;
+    border: 2px solid #333;
     border-radius: 10px;
     color: white;
-    font-size: 18px;
+    font-size: 20px;
+    font-weight: bold;
     cursor: pointer;
-    transition: all 0.1s;
-    flex: 0 1 auto;
-    padding: 0 10px;
+    transition: all 0.2s;
 }
 
 .key:hover {
     background: #333;
+    border-color: #4CAF50;
     transform: scale(1.05);
 }
 
@@ -559,8 +573,20 @@ body {
 }
 
 .key.special {
-    min-width: 70px;
     background: #4CAF50;
+    border-color: #4CAF50;
+    min-width: 60px;
+}
+
+.streak-info {
+    text-align: center;
+    margin: 10px 0;
+    padding: 10px;
+    background: #0f0f0f;
+    border-radius: 50px;
+    border: 2px solid #4CAF50;
+    color: #4CAF50;
+    font-weight: bold;
 }
 
 /* ===== ВЫВОД СРЕДСТВ ===== */
@@ -600,17 +626,17 @@ body {
     color: #888;
 }
 
-/* ===== ИСТОРИЯ (БЕЗ ПОЛОСЫ ПРОКРУТКИ) ===== */
+/* ===== ИСТОРИЯ ===== */
 .history-list {
     max-height: 400px;
     overflow-y: auto;
     margin: 20px 0;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 .history-list::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
 }
 
 .history-item {
@@ -628,6 +654,12 @@ body {
 
 .history-item.penalty {
     border-left-color: #f44336;
+}
+
+.history-item .date {
+    color: #888;
+    font-size: 12px;
+    margin-top: 5px;
 }
 
 @keyframes slideIn {
@@ -696,6 +728,17 @@ body {
 
 .admin-table tr:hover {
     background: #0f0f0f;
+}
+
+.admin-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin: 20px 0;
+    scrollbar-width: none;
+}
+
+.admin-list::-webkit-scrollbar {
+    display: none;
 }
 
 /* ===== ССЫЛКА ===== */
@@ -792,6 +835,10 @@ h2 {
         grid-template-columns: 1fr;
     }
     
+    .store-options {
+        grid-template-columns: 1fr;
+    }
+    
     .key {
         min-width: 30px;
         font-size: 16px;
@@ -838,58 +885,4 @@ h2 {
     .key.special {
         min-width: 50px;
     }
-}
-
-/* ДЛЯ ДАТЫ */
-input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    cursor: pointer;
-}
-
-/* ДЛЯ WORDLE */
-.keyboard-container {
-    margin: 20px 0;
-}
-
-.keyboard-row {
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-    margin: 5px 0;
-    flex-wrap: wrap;
-}
-
-.key {
-    min-width: 40px;
-    height: 50px;
-    background: #0f0f0f;
-    border: 2px solid #333;
-    border-radius: 10px;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.key:hover {
-    background: #333;
-    border-color: #4CAF50;
-    transform: scale(1.05);
-}
-
-.key:active {
-    transform: scale(0.95);
-}
-
-.key.special {
-    background: #4CAF50;
-    border-color: #4CAF50;
-    min-width: 60px;
-}
-
-/* ДЛЯ МАГАЗИНОВ */
-.custom-select select {
-    border-radius: 50px !important;
-    padding: 15px 25px !important;
 }
