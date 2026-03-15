@@ -3,18 +3,31 @@
 function uploadCheck() {
     const modal = document.getElementById('checkModal');
     
-    // Делаем красивый выбор даты
+    // Создаем красивый выбор магазина, если его нет
+    if (!document.querySelector('.store-selector')) {
+        const select = document.getElementById('checkStore');
+        select.style.display = 'none';
+        
+        const selector = document.createElement('div');
+        selector.className = 'store-selector';
+        
+        const options = ['Пятерочка', 'Магнит', 'Монетка', 'Чижик'];
+        let optionsHtml = '<div class="store-options">';
+        options.forEach(store => {
+            optionsHtml += `<div class="store-option" onclick="selectStore('${store}')">${store}</div>`;
+        });
+        optionsHtml += '</div>';
+        
+        selector.innerHTML = optionsHtml;
+        select.insertAdjacentElement('beforebegin', selector);
+    }
+    
+    // Создаем красивый выбор даты
     const dateInput = document.getElementById('checkDate');
     dateInput.type = 'date';
-    dateInput.style.padding = '15px 20px';
-    dateInput.style.background = '#0f0f0f';
-    dateInput.style.border = '2px solid #333';
-    dateInput.style.borderRadius = '50px';
-    dateInput.style.color = 'white';
-    dateInput.style.width = '100%';
-    dateInput.style.margin = '10px 0';
+    dateInput.className = 'date-picker';
     
-    // Проверяем, создан ли красивый выбор файла
+    // Создаем красивый выбор файла, если его нет
     if (!document.querySelector('.file-input-wrapper')) {
         const fileInput = document.getElementById('checkPhoto');
         fileInput.style.display = 'none';
@@ -47,11 +60,25 @@ function uploadCheck() {
         wrapper.appendChild(fileButton);
         wrapper.appendChild(label);
         
-        const selectWrapper = document.querySelector('.custom-select');
-        selectWrapper.insertAdjacentElement('afterend', wrapper);
+        const dateWrapper = document.querySelector('.date-picker');
+        dateWrapper.insertAdjacentElement('afterend', wrapper);
     }
     
+    // Очищаем поля
+    document.getElementById('checkDate').value = '';
+    document.getElementById('fileName').textContent = 'Файл не выбран';
+    document.getElementById('checkPhoto').value = '';
+    
+    // Убираем выделение с магазинов
+    document.querySelectorAll('.store-option').forEach(opt => opt.classList.remove('selected'));
+    
     modal.classList.add('active');
+}
+
+function selectStore(store) {
+    document.querySelectorAll('.store-option').forEach(opt => opt.classList.remove('selected'));
+    event.target.classList.add('selected');
+    document.getElementById('checkStore').value = store;
 }
 
 function closeCheck() {
@@ -62,6 +89,11 @@ async function submitCheck() {
     const store = document.getElementById('checkStore').value;
     const date = document.getElementById('checkDate').value;
     const file = document.getElementById('checkPhoto').files[0];
+    
+    if (!store) {
+        alert('Выберите магазин');
+        return;
+    }
     
     if (!file) {
         alert('Выберите фото чека');
@@ -93,13 +125,10 @@ async function submitCheck() {
             
             const data = await response.json();
             if (data.success) {
-                alert('Чек отправлен на проверку');
+                alert('✅ Чек отправлен на проверку');
                 closeCheck();
-                document.getElementById('fileName').textContent = 'Файл не выбран';
-                document.getElementById('checkDate').value = '';
-                document.getElementById('checkPhoto').value = '';
             } else {
-                alert(data.error);
+                alert('❌ ' + (data.error || 'Ошибка загрузки'));
             }
         } catch(e) {
             alert('Ошибка: ' + e);
@@ -114,3 +143,4 @@ async function submitCheck() {
 window.uploadCheck = uploadCheck;
 window.closeCheck = closeCheck;
 window.submitCheck = submitCheck;
+window.selectStore = selectStore;
