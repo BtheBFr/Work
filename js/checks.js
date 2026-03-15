@@ -3,6 +3,7 @@
 function uploadCheck() {
     const modal = document.getElementById('checkModal');
     
+    // Создаем красивый выбор магазина
     if (!document.querySelector('.store-selector')) {
         const select = document.getElementById('checkStore');
         select.style.display = 'none';
@@ -21,52 +22,51 @@ function uploadCheck() {
         select.insertAdjacentElement('beforebegin', selector);
     }
     
+    // Создаем красивый выбор даты
     const dateInput = document.getElementById('checkDate');
     dateInput.type = 'date';
     dateInput.className = 'date-picker';
     
-    if (!document.querySelector('.file-input-wrapper')) {
+    // Создаем красивую кнопку загрузки фото (как кнопка "Отправить")
+    if (!document.querySelector('.file-upload-btn')) {
         const fileInput = document.getElementById('checkPhoto');
         fileInput.style.display = 'none';
         
-        const wrapper = document.createElement('div');
-        wrapper.className = 'file-input-wrapper';
+        const uploadBtn = document.createElement('button');
+        uploadBtn.className = 'btn btn-primary';
+        uploadBtn.id = 'uploadPhotoBtn';
+        uploadBtn.innerHTML = '📸 Загрузить фото';
+        uploadBtn.style.marginBottom = '10px';
+        uploadBtn.onclick = function() {
+            fileInput.click();
+        };
         
-        const label = document.createElement('label');
-        label.className = 'file-label';
-        label.innerHTML = `
-            <span>📸 Выбрать фото чека</span>
-            <span id="fileName">Файл не выбран</span>
-        `;
-        
-        const fileButton = document.createElement('input');
-        fileButton.type = 'file';
-        fileButton.className = 'file-input';
-        fileButton.accept = 'image/*';
-        fileButton.capture = 'environment';
-        
-        fileButton.addEventListener('change', function() {
-            document.getElementById('fileName').textContent = this.files[0] ? this.files[0].name : 'Файл не выбран';
+        fileInput.addEventListener('change', function() {
             if (this.files[0]) {
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(this.files[0]);
-                fileInput.files = dataTransfer.files;
+                uploadBtn.innerHTML = `📸 ${this.files[0].name}`;
+                uploadBtn.style.background = '#4CAF50';
+            } else {
+                uploadBtn.innerHTML = '📸 Загрузить фото';
+                uploadBtn.style.background = '';
             }
         });
         
-        wrapper.appendChild(fileButton);
-        wrapper.appendChild(label);
-        
-        const dateWrapper = document.querySelector('.date-picker');
-        dateWrapper.insertAdjacentElement('afterend', wrapper);
+        // Вставляем перед кнопкой "Отправить"
+        const submitBtn = document.querySelector('#checkModal .btn-primary:not(#uploadPhotoBtn)');
+        submitBtn.parentNode.insertBefore(uploadBtn, submitBtn);
     }
     
     // Очищаем поля
     document.getElementById('checkDate').value = '';
-    document.getElementById('fileName').textContent = 'Файл не выбран';
     document.getElementById('checkPhoto').value = '';
-    
     document.querySelectorAll('.store-option').forEach(opt => opt.classList.remove('selected'));
+    
+    // Сбрасываем текст кнопки
+    const uploadBtn = document.getElementById('uploadPhotoBtn');
+    if (uploadBtn) {
+        uploadBtn.innerHTML = '📸 Загрузить фото';
+        uploadBtn.style.background = '';
+    }
     
     modal.classList.add('active');
 }
@@ -92,7 +92,7 @@ async function submitCheck() {
     }
     
     if (!file) {
-        alert('Выберите фото чека');
+        alert('Сначала загрузите фото чека');
         return;
     }
     
