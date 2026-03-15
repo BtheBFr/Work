@@ -4,7 +4,6 @@ function showWithdraw() {
     const modal = document.getElementById('withdrawModal');
     const content = modal.querySelector('.modal-content');
     
-    // Создаем красивый выбор реквизитов, если его нет
     if (!content.querySelector('.withdraw-options')) {
         const select = document.getElementById('withdrawType');
         select.style.display = 'none';
@@ -34,7 +33,6 @@ function showWithdraw() {
         title.insertAdjacentElement('afterend', optionsDiv);
     }
     
-    // Очищаем поля
     document.getElementById('withdrawAmount').value = '';
     document.getElementById('secretCode').value = '';
     
@@ -60,11 +58,21 @@ async function withdraw() {
         return;
     }
 
-    // Проверяем, заполнен ли выбранный реквизит
     let requisitExists = false;
-    if (type === 'phone' && currentUser.phone) requisitExists = true;
-    if (type === 'card' && currentUser.card) requisitExists = true;
-    if (type === 'steam' && currentUser.steam) requisitExists = true;
+    let requisitValue = '';
+    
+    if (type === 'phone') {
+        requisitExists = !!currentUser.phone;
+        requisitValue = currentUser.phone;
+    }
+    if (type === 'card') {
+        requisitExists = !!currentUser.card;
+        requisitValue = currentUser.card;
+    }
+    if (type === 'steam') {
+        requisitExists = !!currentUser.steam;
+        requisitValue = currentUser.steam;
+    }
 
     if (!requisitExists) {
         alert('Сначала добавьте этот реквизит в профиле');
@@ -87,11 +95,9 @@ async function withdraw() {
             alert('✅ Заявка на вывод создана');
             closeWithdraw();
             
-            // Обновляем данные пользователя
             const userResponse = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
             const userData = await userResponse.json();
             if (userData.success) {
-                userData.isAdmin = userData.isAdmin === 'TRUE' || userData.isAdmin === true;
                 currentUser = { ...currentUser, ...userData };
                 saveToCache();
             }
