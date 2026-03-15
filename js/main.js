@@ -47,8 +47,6 @@ function loadFromCache() {
             currentUser = JSON.parse(saved);
             console.log('Загружено из кеша:', currentUser);
             
-            currentUser.isAdmin = currentUser.isAdmin === 'TRUE' || currentUser.isAdmin === true;
-            
             document.getElementById('authModal').classList.remove('active');
             document.getElementById('mainSite').style.display = 'block';
             
@@ -94,8 +92,6 @@ function updateUI() {
             console.log('Обновление данных:', data);
             
             if (data.success) {
-                data.isAdmin = data.isAdmin === 'TRUE' || data.isAdmin === true;
-                
                 currentUser = { ...currentUser, ...data };
                 saveToCache();
                 
