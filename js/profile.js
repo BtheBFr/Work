@@ -25,33 +25,37 @@ function closeProfile() {
 
 async function updateRequisites() {
     const requisites = {
-        phone: document.getElementById('profilePhone').value,
-        card: document.getElementById('profileCard').value,
-        steam: document.getElementById('profileSteam').value
+        phone: document.getElementById('profilePhone').value.trim(),
+        card: document.getElementById('profileCard').value.trim(),
+        steam: document.getElementById('profileSteam').value.trim()
     };
 
-    showLoader(); // ПОКАЗЫВАЕМ ЗАГРУЗКУ
+    showLoader();
     try {
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({
                 action: 'updateRequisites',
                 token: currentUser.token,
-                requisites
+                requisites: requisites
             })
         });
         
         const data = await response.json();
         if (data.success) {
-            currentUser = { ...currentUser, ...requisites };
+            currentUser.phone = requisites.phone;
+            currentUser.card = requisites.card;
+            currentUser.steam = requisites.steam;
             saveToCache();
-            alert('Реквизиты обновлены');
+            alert('✅ Реквизиты обновлены');
             closeProfile();
+        } else {
+            alert('❌ ' + (data.error || 'Ошибка обновления'));
         }
     } catch(e) {
         alert('Ошибка: ' + e);
     } finally {
-        hideLoader(); // СКРЫВАЕМ ЗАГРУЗКУ
+        hideLoader();
     }
 }
 
