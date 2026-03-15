@@ -9,7 +9,11 @@ window.showAdmin = async function() {
         return;
     }
     
-    if (!currentUser.isAdmin) {
+    // Проверяем isAdmin (строка 'TRUE' или булево true)
+    const isAdmin = currentUser.isAdmin === true || currentUser.isAdmin === 'TRUE';
+    console.log('isAdmin check:', isAdmin);
+    
+    if (!isAdmin) {
         alert('Доступ запрещен');
         return;
     }
@@ -33,10 +37,12 @@ window.showAdminTab = async function(tab) {
         if (tab === 'users') {
             const response = await fetch(`${SCRIPT_URL}?action=adminGetAllUsers&token=${currentUser.token}`);
             data = await response.json();
+            console.log('adminGetAllUsers:', data);
             
             if (data.success) {
                 let html = '<table class="admin-table"><tr><th>Токен</th><th>Имя</th><th>Баланс</th><th>Админ</th></tr>';
                 data.users.forEach(user => {
+                    // Правильная проверка админа
                     const isUserAdmin = user.isAdmin === true || user.isAdmin === 'TRUE';
                     html += `<tr>
                         <td>${user.token}</td>
