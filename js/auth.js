@@ -29,7 +29,6 @@ window.register = async function() {
         
         if (data.exists) {
             if (!data.used) {
-                // Токен не использован - регистрация
                 currentUser = { 
                     token: token, 
                     name: data.name,
@@ -38,7 +37,6 @@ window.register = async function() {
                 document.getElementById('registerForm').style.display = 'none';
                 document.getElementById('requisitesForm').style.display = 'block';
             } else {
-                // Токен уже использован - вход
                 await window.loginUser(token);
             }
         } else {
@@ -69,7 +67,6 @@ window.loginUser = async function(token) {
         console.log('getUserData ответ:', data);
         
         if (data.success) {
-            // Преобразуем isAdmin в булево
             data.isAdmin = data.isAdmin === 'TRUE' || data.isAdmin === true;
             
             currentUser = data;
@@ -78,7 +75,6 @@ window.loginUser = async function(token) {
             document.getElementById('authModal').classList.remove('active');
             document.getElementById('mainSite').style.display = 'block';
             
-            // Проверяем админа
             console.log('isAdmin значение:', data.isAdmin);
             if (currentUser.isAdmin) {
                 document.getElementById('adminBtn').style.display = 'block';
@@ -86,6 +82,11 @@ window.loginUser = async function(token) {
             } else {
                 document.getElementById('adminBtn').style.display = 'none';
                 console.log('Не админ');
+            }
+            
+            // Предзагружаем Wordle
+            if (window.preloadWordle) {
+                setTimeout(() => preloadWordle(), 1000);
             }
             
             updateUI();
@@ -107,7 +108,6 @@ window.saveRequisites = async function() {
         steam: document.getElementById('steam').value.trim()
     };
 
-    // Проверяем что ввели хотя бы один реквизит
     if (!requisites.phone && !requisites.card && !requisites.steam) {
         alert('Введите хотя бы один реквизит');
         return;
@@ -128,7 +128,6 @@ window.saveRequisites = async function() {
         console.log('register ответ:', data);
         
         if (data.success) {
-            // Обновляем текущего пользователя
             currentUser.phone = requisites.phone;
             currentUser.card = requisites.card;
             currentUser.steam = requisites.steam;
@@ -137,7 +136,6 @@ window.saveRequisites = async function() {
             document.getElementById('authModal').classList.remove('active');
             document.getElementById('mainSite').style.display = 'block';
             
-            // Проверяем админа
             if (currentUser.isAdmin) {
                 document.getElementById('adminBtn').style.display = 'block';
             }
@@ -154,9 +152,8 @@ window.saveRequisites = async function() {
     }
 }
 
-// Сброс форм при открытии модалки
+// Очищаем поля при открытии
 document.addEventListener('DOMContentLoaded', function() {
-    // Очищаем поля при открытии
     const authModal = document.getElementById('authModal');
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
