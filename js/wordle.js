@@ -10,7 +10,6 @@ let wordleState = {
     gameDate: null
 };
 
-// Загружаем слово заранее при старте
 async function preloadWordle() {
     if (!currentUser) return;
     
@@ -43,8 +42,14 @@ async function preloadWordle() {
 }
 
 async function playWordle() {
-    // Проверяем, не прошла ли полночь
     const today = new Date().toDateString();
+    
+    // Проверяем, не закончилась ли игра
+    if (wordleState.attempts.length >= 6 || (wordleState.attempts.length > 0 && wordleState.attempts[wordleState.attempts.length - 1] === wordleState.word)) {
+        alert('Вы уже играли сегодня');
+        return;
+    }
+    
     if (wordleState.gameDate !== today) {
         wordleState = {
             word: '',
@@ -120,7 +125,6 @@ function renderWordle() {
     }
     html += '</div>';
     
-    // Добавляем информацию о стрике
     let streakHtml = '';
     if (wordleState.streak > 0) {
         streakHtml = `<div class="streak-info">🔥 Стрик: ${wordleState.streak} ${wordleState.streak > 1 ? '(бонус +0.05)' : ''}</div>`;
@@ -132,7 +136,7 @@ function renderWordle() {
 
 function renderKeyboard() {
     const rows = [
-        ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з'],
+        ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з', 'х', 'ъ'],
         ['ф', 'ы', 'в', 'а', 'п', 'р', 'о', 'л', 'д', 'ж', 'э'],
         ['я', 'ч', 'с', 'м', 'и', 'т', 'ь', 'б', 'ю']
     ];
@@ -178,6 +182,7 @@ document.addEventListener('keydown', function(e) {
 
 function typeLetter(letter) {
     if (wordleState.currentRow >= 6 || wordleState.attempts.length >= 6) return;
+    if (wordleState.attempts.length > 0 && wordleState.attempts[wordleState.attempts.length - 1] === wordleState.word) return;
     
     if (!wordleState.currentAttempt) {
         wordleState.currentAttempt = [];
@@ -204,7 +209,6 @@ async function submitWord() {
     
     const word = wordleState.currentAttempt.join('');
     
-    // Проверяем, что слово из 5 букв
     if (word.length !== 5) {
         alert('Слово должно быть из 5 букв');
         return;
@@ -239,6 +243,14 @@ async function submitWord() {
                 saveToCache();
                 localStorage.removeItem(`wordle_${currentUser.token}_${new Date().toDateString()}`);
                 closeWordle();
+                
+                const userResponse = await fetch(`${SCRIPT_URL}?action=getUserData&token=${currentUser.token}`);
+                const userData = await userResponse.json();
+                if (userData.success) {
+                    userData.isAdmin = userData.isAdmin === 'TRUE' || userData.isAdmin === true;
+                    currentUser = { ...currentUser, ...userData };
+                    saveToCache();
+                }
             }
         } catch(e) {
             alert('Ошибка: ' + e);
