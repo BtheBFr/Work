@@ -6,23 +6,21 @@ let wordleState = {
     currentRow: 0,
     currentCol: 0,
     streak: 0,
-    gameId: null
+    gameId: null,
+    gameDate: null
 };
 
-async function playWordle() {
-    showLoader();
+// Загружаем слово заранее при старте
+async function preloadWordle() {
+    if (!currentUser) return;
+    
     try {
-        // Проверяем, есть ли сохраненная игра в кеше
         const savedGame = localStorage.getItem(`wordle_${currentUser.token}_${new Date().toDateString()}`);
-        
         if (savedGame) {
             wordleState = JSON.parse(savedGame);
-            renderWordle();
-            document.getElementById('wordleModal').classList.add('active');
-            hideLoader();
             return;
         }
-
+        
         const response = await fetch(`${SCRIPT_URL}?action=getWordle&token=${currentUser.token}`);
         const data = await response.json();
         
@@ -33,17 +31,55 @@ async function playWordle() {
                 currentRow: data.attempts ? data.attempts.length : 0,
                 currentCol: 0,
                 streak: data.streak || 0,
-                gameId: data.gameId
+                gameId: data.gameId,
+                gameDate: new Date().toDateString()
             };
             
-            // Сохраняем в кеш
             localStorage.setItem(`wordle_${currentUser.token}_${new Date().toDateString()}`, JSON.stringify(wordleState));
-            
-            renderWordle();
-            document.getElementById('wordleModal').classList.add('active');
-        } else {
-            alert('Нет слов на сегодня');
         }
+    } catch(e) {
+        console.log('Ошибка предзагрузки Wordle:', e);
+    }
+}
+
+async function playWordle() {
+    // Проверяем, не прошла ли полночь
+    const today = new Date().toDateString();
+    if (wordleState.gameDate !== today) {
+        wordleState = {
+            word: '',
+            attempts: [],
+            currentRow: 0,
+            currentCol: 0,
+            streak: 0,
+            gameId: null,
+            gameDate: today
+        };
+    }
+    
+    showLoader();
+    try {
+        if (!wordleState.word) {
+            const response = await fetch(`${SCRIPT_URL}?action=getWordle&token=${currentUser.token}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                wordleState.word = data.word;
+                wordleState.attempts = data.attempts || [];
+                wordleState.currentRow = data.attempts ? data.attempts.length : 0;
+                wordleState.streak = data.streak || 0;
+                wordleState.gameId = data.gameId;
+                
+                localStorage.setItem(`wordle_${currentUser.token}_${today}`, JSON.stringify(wordleState));
+            } else {
+                alert('Нет слов на сегодня');
+                hideLoader();
+                return;
+            }
+        }
+        
+        renderWordle();
+        document.getElementById('wordleModal').classList.add('active');
     } catch(e) {
         alert('Ошибка: ' + e);
     } finally {
@@ -84,11 +120,16 @@ function renderWordle() {
     }
     html += '</div>';
     
-    gameDiv.innerHTML = html;
+    // Добавляем информацию о стрике
+    let streakHtml = '';
+    if (wordleState.streak > 0) {
+        streakHtml = `<div class="streak-info">🔥 Стрик: ${wordleState.streak} ${wordleState.streak > 1 ? '(бонус +0.05)' : ''}</div>`;
+    }
+    
+    gameDiv.innerHTML = html + streakHtml;
     renderKeyboard();
 }
 
-// ПРОСТАЯ КЛАВИАТУРА КАК ТЫ ХОТЕЛ
 function renderKeyboard() {
     const rows = [
         ['й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з'],
@@ -118,7 +159,6 @@ function renderKeyboard() {
     document.getElementById('wordleKeyboard').innerHTML = html;
 }
 
-// Обработка физической клавиатуры
 document.addEventListener('keydown', function(e) {
     if (!document.getElementById('wordleModal').classList.contains('active')) return;
     
@@ -126,15 +166,18 @@ document.addEventListener('keydown', function(e) {
     
     if (/^[а-я]$/.test(key)) {
         typeLetter(key);
+        e.preventDefault();
     } else if (e.key === 'Backspace') {
         deleteLetter();
+        e.preventDefault();
     } else if (e.key === 'Enter') {
         submitWord();
+        e.preventDefault();
     }
 });
 
 function typeLetter(letter) {
-    if (wordleState.currentRow >= 6) return;
+    if (wordleState.currentRow >= 6 || wordleState.attempts.length >= 6) return;
     
     if (!wordleState.currentAttempt) {
         wordleState.currentAttempt = [];
@@ -160,7 +203,16 @@ async function submitWord() {
     }
     
     const word = wordleState.currentAttempt.join('');
+    
+    // Проверяем, что слово из 5 букв
+    if (word.length !== 5) {
+        alert('Слово должно быть из 5 букв');
+        return;
+    }
+    
     wordleState.attempts.push(word);
+    wordleState.currentAttempt = [];
+    wordleState.currentRow = wordleState.attempts.length;
     
     localStorage.setItem(`wordle_${currentUser.token}_${new Date().toDateString()}`, JSON.stringify(wordleState));
     
@@ -178,8 +230,12 @@ async function submitWord() {
             
             const data = await response.json();
             if (data.success) {
-                alert(data.message);
-                currentUser.balance = (currentUser.balance || 0) + data.reward;
+                const reward = data.reward || 0.15;
+                const newStreak = (wordleState.streak || 0) + 1;
+                alert(`🎉 Победа! +${reward} руб ${newStreak > 1 ? '(Стрик +0.05)' : ''}`);
+                
+                currentUser.balance = (currentUser.balance || 0) + reward;
+                wordleState.streak = newStreak;
                 saveToCache();
                 localStorage.removeItem(`wordle_${currentUser.token}_${new Date().toDateString()}`);
                 closeWordle();
@@ -189,7 +245,7 @@ async function submitWord() {
         } finally {
             hideLoader();
         }
-    } else if (wordleState.attempts.length === 6) {
+    } else if (wordleState.attempts.length >= 6) {
         showLoader();
         try {
             await fetch(SCRIPT_URL, {
@@ -200,7 +256,9 @@ async function submitWord() {
                     wordData: { status: 'lose' }
                 })
             });
-            alert('Не угадали! Попробуйте завтра');
+            
+            alert('😔 Не угадали! Попробуйте завтра');
+            wordleState.streak = 0;
             localStorage.removeItem(`wordle_${currentUser.token}_${new Date().toDateString()}`);
             closeWordle();
         } catch(e) {
@@ -209,8 +267,6 @@ async function submitWord() {
             hideLoader();
         }
     } else {
-        wordleState.currentRow++;
-        wordleState.currentAttempt = [];
         renderWordle();
     }
 }
@@ -224,3 +280,4 @@ window.typeLetter = typeLetter;
 window.deleteLetter = deleteLetter;
 window.submitWord = submitWord;
 window.closeWordle = closeWordle;
+window.preloadWordle = preloadWordle;
