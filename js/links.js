@@ -2,15 +2,12 @@
 
 function showLinks() {
     const modal = document.getElementById('linksModal');
-    const linkContainer = modal.querySelector('.link-container');
+    const content = modal.querySelector('.modal-content');
     
-    if (!linkContainer) {
-        // Создаем красивый контейнер для ссылки
-        const content = modal.querySelector('.modal-content');
+    if (!content.querySelector('.link-container')) {
         const oldLink = document.getElementById('userLink');
         const oldBtn = content.querySelector('button[onclick="copyLink()"]');
         
-        // Создаем новый контейнер
         const container = document.createElement('div');
         container.className = 'link-container';
         
@@ -21,17 +18,15 @@ function showLinks() {
         
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-btn';
-        copyBtn.innerHTML = '<i>📋</i> Копировать ссылку';
+        copyBtn.innerHTML = '📋 Копировать ссылку';
         copyBtn.onclick = copyLink;
         
         container.appendChild(linkElement);
         container.appendChild(copyBtn);
         
-        // Заменяем старые элементы
         if (oldLink) oldLink.remove();
         if (oldBtn) oldBtn.remove();
         
-        // Вставляем после заголовка
         const title = content.querySelector('h2');
         title.insertAdjacentElement('afterend', container);
     } else {
@@ -40,6 +35,13 @@ function showLinks() {
     
     document.getElementById('linkClicks').textContent = currentUser.clicks || 0;
     document.getElementById('linkEarned').textContent = currentUser.earnedFromLinks || 0;
+    
+    // Обновляем текст подсказки
+    const hint = document.querySelector('#linksModal .hint');
+    if (hint) {
+        hint.textContent = 'Распространяй ссылку везде, говори что там слив, бесплатные деньги, или др.';
+    }
+    
     document.getElementById('linksModal').classList.add('active');
 }
 
@@ -50,11 +52,14 @@ function closeLinks() {
 function copyLink() {
     navigator.clipboard.writeText(currentUser.link);
     
-    // Показываем красивый эффект
     const btn = event.target.closest('.copy-btn');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i>✅</i> Скопировано!';
+    btn.innerHTML = '✅ Скопировано!';
     setTimeout(() => {
         btn.innerHTML = originalText;
     }, 2000);
 }
+
+window.showLinks = showLinks;
+window.closeLinks = closeLinks;
+window.copyLink = copyLink;
